@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "972236198939",
+    "project_id": "emergency-alert-system-84169",
+    "storage_bucket": "emergency-alert-system-84169.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:972236198939:android:4c119ee8860e3b066014be",
+        "android_client_info": {
+          "package_name": "com.loganthecreator.emergencyalertsystem"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPHMRCqvksYALvgo_fjb_tDcj4x_IEups"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

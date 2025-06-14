@@ -3,11 +3,10 @@
   "compilerOptions": {
     "strict": true,
     "allowJs": true,
+    "noEmit": true,
     "esModuleInterop": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [

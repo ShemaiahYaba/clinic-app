@@ -4,6 +4,11 @@ import { Audio } from 'expo-av';
 import { useGlobal, useEmergencyAlert } from '@/components/GlobalSearch';
 import images from '../../constants/Image';
 import { router } from 'expo-router';
+import { supabase } from '@/utils/supabaseClient';
+import { showSuccessToast, showErrorToast } from '@/utils/toast';
+import { validateAlert, withRetry } from '@/utils/database';
+
+const EDGE_FUNCTION_URL = 'https://oxhjrszqngdyvbixxyvo.supabase.co/functions/v1/send-push-alert';
 
 const EmergencyRing = () => {
   const { isActive: emergencyActive, isSender } = useEmergencyAlert();
@@ -14,8 +19,60 @@ const EmergencyRing = () => {
   const shakeTimeout = useRef<NodeJS.Timeout | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
 
-  const handleNotificationPress = () => {
-    router.push('/(EmergencyAction)/ConfirmationPage');
+  const triggerEmergency = async () => {
+    try {
+      // Convert isSender to string if it's a boolean
+      const senderId = isSender ? 'true' : 'false';
+      
+      // Validate alert data
+      validateAlert({ sender_id: senderId });
+
+      // Use withRetry for database operations
+      const { error: dbError } = await withRetry(async () => {
+        return await supabase.from('alerts').insert([{ 
+          sender_id: senderId, 
+          message: 'Emergency alert triggered!' 
+        }]);
+      });
+      
+      if (dbError) {
+        console.error('Error triggering emergency:', dbError);
+        showErrorToast('Failed to trigger emergency alert');
+        return false;
+      }
+
+      // Call the Edge Function to send push notifications
+      const response = await withRetry(async () => {
+        return await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
+          },
+          body: JSON.stringify({ sender_id: senderId })
+        });
+      });
+
+      if (!response.ok) {
+        console.error('Error sending push notifications:', await response.text());
+        showErrorToast('Alert created but failed to notify others');
+        return false;
+      }
+
+      showSuccessToast('Emergency alert sent successfully');
+      return true;
+    } catch (error) {
+      console.error('Error in emergency trigger:', error);
+      showErrorToast(error instanceof Error ? error.message : 'An unexpected error occurred');
+      return false;
+    }
+  };
+
+  const handleNotificationPress = async () => {
+    const success = await triggerEmergency();
+    if (success) {
+      router.push('/(EmergencyAction)/ConfirmationPage');
+    }
   };
 
   const loadAlarmSound = async (): Promise<void> => {

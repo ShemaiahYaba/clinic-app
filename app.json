@@ -1,7 +1,16 @@
 {
   "expo": {
+    "notification": {
+      "icon": "./assets/images/notification_icon.png",
+      "color": "#1142BE",
+      "serviceWorkerPath": "firebase-messaging-sw.js",
+      "sounds": [
+        "./assets/sound/emergency_alert.wav"
+      ],
+      "vapidPublicKey": "BFPus9mtj_BrAjYMMGQLlwBcJaumtPM1TqKAM7xHU3f-CbrHLjMinZ7a8DSCR1iz75jkMs2yZ1rUPJvW9479AsY"
+    },
     "name": "emergency-alert-system",
-    "slug": "emergency-alert-system",
+    "slug": "clinic-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -36,10 +45,15 @@
         "MODIFY_AUDIO_SETTINGS",
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS",
-        "VIBRATE"
+        "VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "package": "com.loganthecreator.emergencyalertsystem",
-      "googleServicesFile": "google-services.json"
+      "package": "com.yabashiaka.clinicapp",
+      "useNextNotificationsApi": true,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -74,9 +88,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "9e5dbcd1-81fe-4486-ab21-601109258ef0"
+        "projectId": "c90572c1-39a6-414b-9547-eac1231e32e6"
       }
     },
-    "owner": "logan_the_creator"
+    "owner": "yabashiaka"
   }
 }

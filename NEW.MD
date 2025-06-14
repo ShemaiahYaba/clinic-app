@@ -1,61 +1,45 @@
-Excellent choice! Supabase gives you a **Firebase-like experience** with more flexibility on the free tier — and **Edge Functions** can replace Firebase Cloud Functions without upgrading a plan.
-
-Here’s your **step-by-step guide** to building the **clinic emergency alert system using Supabase**, fully compatible with your React Native app:
+Absolutely! Here's a **detailed point-by-point outline** for implementing the **Supabase-based Emergency Alert System using Expo Push Notifications** in your **React Native (Expo)** app:
 
 ---
 
-## 🚨 Emergency Alert System — Supabase-Based Setup
+## ✅ Emergency Alert System (Expo + Supabase) — Full Implementation Outline
 
 ---
 
-### ✅ **Overview**
+### **🔧 1. Supabase Setup**
 
-Architecture:
+1.1 **Create a Supabase Project**
 
-```
-[React Native App]
-   ↕️ Supabase (Postgres DB + Realtime Subscriptions)
-   ↕️ Supabase Edge Function (for Push Notifications via FCM)
-   → Other Devices
-```
+* Go to [https://supabase.com](https://supabase.com) → New Project
+* Save:
 
----
+  * `SUPABASE_URL`
+  * `ANON_KEY` (for app)
+  * `SERVICE_ROLE_KEY` (for Edge Functions only)
 
-### 🔧 Part 1: Supabase Setup
+1.2 **Enable Realtime**
 
-#### 1. Create a Supabase Project
-
-- Go to [https://supabase.com](https://supabase.com)
-- Click “New Project”
-- Create a database
-- Save:
-
-  - **Project URL**
-  - **Anon/public API key**
-  - **Service Role Key** (used by Edge Functions, not in the app)
-
-#### 2. Enable Realtime
-
-Supabase enables realtime on tables by default. We’ll use this for clients to react instantly to alerts.
+* Enabled by default on Supabase tables
+* Used for real-time listening to new alerts
 
 ---
 
-### 🛠️ Part 2: Database Schema
+### **🗃️ 2. Database Schema**
 
-You’ll need a `devices` and an `alerts` table.
-
-#### Devices Table (to store FCM tokens)
+2.1 **Devices Table**
+Stores Expo push tokens for all devices.
 
 ```sql
 create table devices (
   id uuid primary key default uuid_generate_v4(),
   user_id text,
-  fcm_token text not null,
+  expo_token text not null,
   created_at timestamp default now()
 );
 ```
 
-#### Alerts Table (to trigger emergency)
+2.2 **Alerts Table**
+Stores emergency events — inserting a row here triggers notifications.
 
 ```sql
 create table alerts (
@@ -66,43 +50,41 @@ create table alerts (
 );
 ```
 
-- Any new row in `alerts` = new emergency alert.
-
 ---
 
-### 💥 Part 3: React Native Client (Register + Listen)
+### **📱 3. React Native (Expo) App Integration**
 
-Install Supabase and FCM libs:
+3.1 **Install Required Packages**
 
 ```bash
-npm install @supabase/supabase-js @react-native-firebase/app @react-native-firebase/messaging
+npm install @supabase/supabase-js
+expo install expo-notifications expo-device expo-constants
 ```
 
-#### 1. Initialize Supabase
+3.2 **Initialize Supabase Client**
 
 ```ts
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
-const supabaseAnonKey = "YOUR_ANON_KEY";
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient("SUPABASE_URL", "ANON_KEY");
 ```
 
-#### 2. Register FCM Token to Supabase
+3.3 **Register Device with Expo Push Token**
 
 ```ts
-import messaging from "@react-native-firebase/messaging";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
 
 async function registerDevice(userId: string) {
-  const token = await messaging().getToken();
-  await supabase
-    .from("devices")
-    .insert([{ user_id: userId, fcm_token: token }]);
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== "granted" || !Device.isDevice) return;
+
+  const token = (await Notifications.getExpoPushTokenAsync()).data;
+  await supabase.from("devices").insert([{ user_id: userId, expo_token: token }]);
 }
 ```
 
-#### 3. Trigger Emergency (Insert to `alerts`)
+3.4 **Trigger Emergency Alert**
 
 ```ts
 async function triggerEmergency(senderId: string) {
@@ -110,20 +92,20 @@ async function triggerEmergency(senderId: string) {
 }
 ```
 
-#### 4. Listen for Emergency Alerts
+3.5 **Listen for Realtime Alerts**
 
 ```ts
 useEffect(() => {
   const channel = supabase
     .channel("alerts")
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "alerts" },
-      (payload) => {
-        console.log("Emergency Alert!", payload);
-        // Play sound & show UI
-      }
-    )
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "alerts"
+    }, (payload) => {
+      console.log("Emergency Alert!", payload);
+      // Play sound or update UI
+    })
     .subscribe();
 
   return () => supabase.removeChannel(channel);
@@ -132,32 +114,27 @@ useEffect(() => {
 
 ---
 
-### ⚙️ Part 4: Edge Function (Send FCM Notification)
+### **🧠 4. Supabase Edge Function to Send Expo Push**
 
-Supabase **Edge Functions** use Deno.
-
-#### 1. Install Supabase CLI
+4.1 **Install & Setup Supabase CLI**
 
 ```bash
 npm install -g supabase
 supabase login
+supabase init
 ```
 
-#### 2. Initialize Functions
+4.2 **Create New Function**
 
 ```bash
-supabase init
 supabase functions new send-push-alert
 ```
 
-#### 3. Edge Function Code (Deno)
-
-In `supabase/functions/send-push-alert/index.ts`:
+4.3 **Function Code (`index.ts`)**
 
 ```ts
 import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
-import { sendFCM } from "./sendFCM.ts"; // helper module
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -169,49 +146,30 @@ serve(async (req) => {
 
   const { data: devices } = await supabase
     .from("devices")
-    .select("fcm_token, user_id")
+    .select("expo_token")
     .neq("user_id", sender_id);
 
-  const tokens = devices?.map((d) => d.fcm_token) || [];
-  if (tokens.length === 0) return new Response("No tokens", { status: 200 });
+  const tokens = (devices ?? []).map((d) => d.expo_token);
 
-  await sendFCM(
-    tokens,
-    "🚨 Emergency Alert",
-    "An emergency has been triggered!"
-  );
+  const messages = tokens.map((to) => ({
+    to,
+    sound: "default",
+    title: "🚨 Emergency Alert",
+    body: "An emergency has been triggered!",
+    data: { type: "EMERGENCY_ALERT" }
+  }));
 
-  return new Response("Push sent", { status: 200 });
+  await fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(messages)
+  });
+
+  return new Response("Push sent");
 });
 ```
 
-#### 4. Add `sendFCM.ts` Helper
-
-Create `sendFCM.ts` to send push via FCM:
-
-```ts
-export async function sendFCM(tokens: string[], title: string, body: string) {
-  const res = await fetch("https://fcm.googleapis.com/fcm/send", {
-    method: "POST",
-    headers: {
-      Authorization: "key=YOUR_SERVER_KEY",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      registration_ids: tokens,
-      notification: { title, body, sound: "default" },
-      data: { type: "EMERGENCY_ALERT" },
-    }),
-  });
-
-  const result = await res.json();
-  console.log("FCM Response:", result);
-}
-```
-
-> Replace `YOUR_SERVER_KEY` with your **Firebase Cloud Messaging Server Key** (from Firebase Console > Project Settings > Cloud Messaging)
-
-#### 5. Deploy Edge Function
+4.4 **Deploy the Function**
 
 ```bash
 supabase functions deploy send-push-alert
@@ -219,22 +177,34 @@ supabase functions deploy send-push-alert
 
 ---
 
-### 🔗 Optional: Automate Push from DB Event
+### **⚙️ 5. Optional: Connect Alert to Push Automatically**
 
-You can create a Supabase **trigger** or webhook to call the Edge Function when a new alert is inserted — or call the Edge Function manually from the app after inserting.
+5.1 **Option 1: Manual Call (App)**
+After triggering an alert, call the edge function via `fetch()` from the app:
+
+```ts
+await fetch("https://<project>.functions.supabase.co/send-push-alert", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ sender_id }),
+});
+```
+
+5.2 **Option 2: Automatic DB Trigger**
+Set up a **Postgres trigger** that invokes the edge function when a new alert is inserted (requires a webhook setup — let me know if you want this!).
 
 ---
 
-### ✅ Summary Checklist
+### **🔒 6. Final Notes and Best Practices**
 
-| Step | Task                                                |
-| ---- | --------------------------------------------------- |
-| ✅   | Create Supabase project and tables                  |
-| ✅   | Setup React Native: register device and send alerts |
-| ✅   | Use realtime listener for alerts                    |
-| ✅   | Deploy Edge Function to send push notifications     |
-| ✅   | Connect it to call when alert is triggered          |
+* **Token Refresh**: Call `registerDevice()` regularly (e.g., on every app start)
+* **Foreground Notifications**: Use `Notifications.addNotificationReceivedListener()`
+* **Expo Credentials** (One-time):
+
+  * Android: Upload FCM key in Expo dashboard or `eas.json`
+  * iOS: Upload APNs key (.p8 file)
+* **Test on real devices**, not simulators/emulators
 
 ---
 
-Would you like a GitHub repo starter with this setup or a `.sql` schema file to quickly create the tables?
+Would you like a GitHub-ready project scaffold or visual diagram for this setup?

@@ -1,5 +1,9 @@
-// Example: supabaseClient.ts
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@env";
-import { createClient } from "@supabase/supabase-js";
+// utils/supabaseClient.ts
+import { Platform } from "react-native";
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = Platform.select({
+  native: require("./supabaseClient.native").supabase,
+  default: require("./supabaseClient.web").supabase,
+});
+
+export { supabase };

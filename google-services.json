@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "972236198939",
-    "project_id": "emergency-alert-system-84169",
-    "storage_bucket": "emergency-alert-system-84169.firebasestorage.app"
+    "project_number": "34561263747",
+    "project_id": "clinic-app-ca8da",
+    "storage_bucket": "clinic-app-ca8da.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:972236198939:android:4c119ee8860e3b066014be",
+        "mobilesdk_app_id": "1:34561263747:android:45ba8acf9dbdd17396b3b6",
         "android_client_info": {
-          "package_name": "com.loganthecreator.emergencyalertsystem"
+          "package_name": "com.yabashiaka.clinicapp"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBPHMRCqvksYALvgo_fjb_tDcj4x_IEups"
+          "current_key": "AIzaSyAI7R0Fw-Eb99fioe5XJjJAW8vLa3NppHE"
         }
       ],
       "services": {

@@ -23,11 +23,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "APP-IOS",
+      "bundleIdentifier": "com.yabashiaka.clinicapp",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
-          "remote-notification",
           "remote-notification"
         ]
       }
@@ -46,24 +45,7 @@
         "MODIFY_AUDIO_SETTINGS",
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS",
-        "VIBRATE",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "INTERNET",
-        "RECEIVE_BOOT_COMPLETED",
-        "WAKE_LOCK",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
-        "MODIFY_AUDIO_SETTINGS",
-        "RECORD_AUDIO",
-        "POST_NOTIFICATIONS",
-        "VIBRATE",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "VIBRATE"
       ],
       "package": "com.yabashiaka.clinicapp",
       "useNextNotificationsApi": true,

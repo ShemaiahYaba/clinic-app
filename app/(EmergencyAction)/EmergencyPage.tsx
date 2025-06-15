@@ -105,21 +105,21 @@ const EmergencyPage = () => {
   const router = useRouter();
   const { sickness, hostelname, userId, userToken } = useGlobal();
   const { triggerAlert } = useEmergencyAlert();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const heartbeatTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const appStateRef = useRef(AppState.currentState);
+  const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const appStateRef = useRef<string>(AppState.currentState);
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
   
   // Connection status management
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
-  const [connectionAttempts, setConnectionAttempts] = useState(0);
-  const [isNetworkAvailable, setIsNetworkAvailable] = useState(true);
-  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
+  const [isNetworkAvailable, setIsNetworkAvailable] = useState<boolean>(true);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Setup axios interceptor for authentication
   useEffect(() => {
@@ -223,8 +223,12 @@ const EmergencyPage = () => {
     });
 
     return () => {
-      Notifications.removeNotificationSubscription(notificationListener.current);
-      Notifications.removeNotificationSubscription(responseListener.current);
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+      if (responseListener.current) {
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
     };
   }, []);
 
@@ -234,7 +238,7 @@ const EmergencyPage = () => {
       clearInterval(heartbeatTimerRef.current);
     }
     
-    heartbeatTimerRef.current = setInterval(() => {
+    const timer = setInterval(() => {
       if (socketRef.current?.connected) {
         // Send a ping to keep the connection alive
         socketRef.current.emit('ping', () => {
@@ -245,7 +249,9 @@ const EmergencyPage = () => {
         console.log('Heartbeat detected disconnection, attempting to reconnect...');
         connectSocket();
       }
-    }, 30000); // 30 seconds
+    }, 30000);
+    
+    heartbeatTimerRef.current = timer;
   }, [isNetworkAvailable]);
 
 // Simplified connection management
@@ -365,17 +371,15 @@ const scheduleReconnect = useCallback(() => {
 
   // Attempt to reconnect manually
   const manualReconnect = () => {
-    // Check if we actually need to reconnect
-    if (connectionStatus === 'connected' && socketRef.current?.connected) {
-      Alert.alert('Already Connected', 'You are already connected to the emergency system.');
-      return;
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
     }
     
-    // Force a new connection attempt
-    setConnectionAttempts(0);
-    connectSocket();
+    const timer = setTimeout(() => {
+      connectSocket();
+    }, 5000);
     
-    Alert.alert('Reconnecting', 'Attempting to reconnect to emergency services...');
+    reconnectTimerRef.current = timer;
   };
 
   const handleEmergency = async () => {

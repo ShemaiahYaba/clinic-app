@@ -92,7 +92,9 @@
             "./assets/sound/emergency_alert.wav"
           ]
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

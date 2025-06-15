@@ -27,6 +27,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
+          "remote-notification",
           "remote-notification"
         ]
       }
@@ -37,6 +38,19 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
+        "INTERNET",
+        "RECEIVE_BOOT_COMPLETED",
+        "WAKE_LOCK",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "MODIFY_AUDIO_SETTINGS",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS",
+        "VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
         "WAKE_LOCK",
@@ -91,6 +105,12 @@
         "projectId": "c90572c1-39a6-414b-9547-eac1231e32e6"
       }
     },
-    "owner": "yabashiaka"
+    "owner": "yabashiaka",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c90572c1-39a6-414b-9547-eac1231e32e6"
+    }
   }
 }

@@ -6,37 +6,69 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { registerUser } from "@/services/authService"; // Make sure path is correct
+import { registerUser } from "@/services/authService";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
+import { useGlobal } from "@/components/GlobalSearch";
 
 const CreateAccount = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { setUserAuth } = useGlobal();
+
+  const validateInput = () => {
+    if (!name.trim()) {
+      Alert.alert("Validation Error", "Please enter your name.");
+      return false;
+    }
+    if (!email.trim()) {
+      Alert.alert("Validation Error", "Please enter your email.");
+      return false;
+    }
+    if (!email.includes('@')) {
+      Alert.alert("Validation Error", "Please enter a valid email address.");
+      return false;
+    }
+    if (!password.trim()) {
+      Alert.alert("Validation Error", "Please enter a password.");
+      return false;
+    }
+    if (password.length < 6) {
+      Alert.alert("Validation Error", "Password must be at least 6 characters long.");
+      return false;
+    }
+    return true;
+  };
 
   const handleCreateAccount = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      Alert.alert("Validation Error", "Please fill all fields.");
-      return;
-    }
+    if (!validateInput()) return;
 
     setIsLoading(true);
+    setError(null);
 
     try {
-      const data = await registerUser({ name, email, password });
+      const response = await registerUser({
+        email,
+        password,
+        name
+      });
 
-      showSuccessToast("Account created! Verify your email.");
-      router.push("/LoginAccount");
-    } catch (error: any) {
-      if (error.message.toLowerCase().includes("user already")) {
-        showErrorToast("An account with this email already exists.");
-      } else {
-        showErrorToast(error.message || "Failed to create account.");
+      if (!response.success) {
+        setError(response.error || 'Failed to create account');
+        return;
       }
+
+      // Registration successful
+      router.replace('/LoginAccount');
+    } catch (err: any) {
+      console.error('Account creation error:', err);
+      setError(err.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
@@ -54,6 +86,7 @@ const CreateAccount = () => {
         placeholder="Enter your name"
         placeholderTextColor="#aaa"
         editable={!isLoading}
+        autoCapitalize="words"
       />
 
       <Text style={styles.label}>Email</Text>
@@ -84,13 +117,18 @@ const CreateAccount = () => {
         onPress={handleCreateAccount}
         disabled={isLoading}
       >
-        <Text style={styles.buttonText}>
-          {isLoading ? "Creating Account..." : "Register"}
-        </Text>
+        {isLoading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Register</Text>
+        )}
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/LoginAccount")}>
-        <Text style={{ color: "black", marginTop: 20, textAlign: "center" }}>
+      <TouchableOpacity 
+        onPress={() => router.push("/LoginAccount")}
+        disabled={isLoading}
+      >
+        <Text style={styles.linkText}>
           Already have an account? Login
         </Text>
       </TouchableOpacity>
@@ -98,50 +136,52 @@ const CreateAccount = () => {
   );
 };
 
-export default CreateAccount;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
     padding: 20,
-    justifyContent: "center",
-    fontFamily: "poppins",
+    backgroundColor: '#fff',
   },
   header: {
-    fontSize: 26,
-    color: "black",
-    marginBottom: 30,
-    textAlign: "center",
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   label: {
-    color: "#ccc",
+    fontSize: 16,
     marginBottom: 5,
-    marginLeft: 5,
+    color: '#333',
   },
   input: {
-    height: 50,
-    backgroundColor: "#white",
-    color: "#fff",
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
   },
   button: {
-    backgroundColor: "blue",
-    paddingVertical: 14,
+    backgroundColor: '#007AFF',
+    padding: 15,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 10,
   },
   buttonDisabled: {
-    backgroundColor: "#666",
+    backgroundColor: '#ccc',
   },
   buttonText: {
-    color: "white",
+    color: 'white',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: 'bold',
+  },
+  linkText: {
+    color: '#007AFF',
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
   },
 });
+
+export default CreateAccount;

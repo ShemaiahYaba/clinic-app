@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { router } from "expo-router";
 import { useGlobal } from "../../components/GlobalSearch";
 import { loginUser } from "@/services/authService";
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginAccount() {
   const { setUserAuth, isLoading, error, resetError } = useGlobal();
@@ -25,14 +26,15 @@ export default function LoginAccount() {
     try {
       resetError();
 
-      const { user, session } = await loginUser({ email, password });
+      const response = await loginUser(email, password);
 
-      // Save user session/token however your app handles it
-      const userId = user?.id;
-      const token = session?.access_token;
+      if (!response.success) {
+        Alert.alert("Login Error", response.error || "Failed to login");
+        return;
+      }
 
-      if (userId && token) {
-        await setUserAuth(userId, token);
+      if (response.user?.id) {
+        await setUserAuth(response.user.id, response.user.session?.access_token);
         router.push("/(EmergenySelection)/HostelPage");
       } else {
         Alert.alert("Login Error", "Unexpected response from server.");
@@ -45,7 +47,21 @@ export default function LoginAccount() {
 
   return (
     <View style={{ flex: 1, padding: 20, marginTop: 100 }}>
-      <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+      {/* Back Button */}
+      <Pressable 
+        onPress={() => router.back()}
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          padding: 10,
+          zIndex: 1
+        }}
+      >
+        <Ionicons name="arrow-back" size={24} color="black" />
+      </Pressable>
+
+      <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 20 }}>
         Login to Your Account
       </Text>
 
@@ -61,6 +77,9 @@ export default function LoginAccount() {
           }}
           value={email}
           onChangeText={setEmail}
+          placeholder="Enter your email"
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
       </View>
 
@@ -77,6 +96,7 @@ export default function LoginAccount() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          placeholder="Enter your password"
         />
       </View>
 
@@ -98,6 +118,19 @@ export default function LoginAccount() {
           <Text style={{ color: "white", fontWeight: "bold" }}>Login</Text>
         </Pressable>
       )}
+
+      {/* Sign Up Link */}
+      <Pressable 
+        onPress={() => router.push('/CreateAccount')}
+        style={{
+          marginTop: 20,
+          alignItems: 'center'
+        }}
+      >
+        <Text style={{ color: 'blue' }}>
+          Don't have an account? <Text style={{ fontWeight: 'bold' }}>Sign Up</Text>
+        </Text>
+      </Pressable>
     </View>
   );
 }

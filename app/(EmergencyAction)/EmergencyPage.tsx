@@ -21,6 +21,7 @@ import { io, Socket } from 'socket.io-client';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios'; // Import axios
+import { registerDeviceToken } from "@/services/deviceService";
 
 // Update API URLs - replace with your actual server address in production
 const API_BASE_URL = 'https://api-hexa.onrender.com';
@@ -41,6 +42,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true
   }),
 });
 
@@ -100,7 +103,7 @@ const registerForPushNotificationsAsync = async () => {
 
 const EmergencyPage = () => {
   const router = useRouter();
-  const { sickness, hostelname } = useGlobal();
+  const { sickness, hostelname, userId, userToken } = useGlobal();
   const { triggerAlert } = useEmergencyAlert();
   const [isLoading, setIsLoading] = useState(false);
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
@@ -111,8 +114,6 @@ const EmergencyPage = () => {
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
   const notificationListener = useRef<any>();
   const responseListener = useRef<any>();
-  const [userId, setUserId] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   
   // Connection status management
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -122,50 +123,47 @@ const EmergencyPage = () => {
 
   // Setup axios interceptor for authentication
   useEffect(() => {
-    if (token) {
-      // Add an interceptor to include the auth token in all requests
+    if (userToken) {
       const interceptor = axiosInstance.interceptors.request.use(
         (config) => {
-          config.headers.Authorization = `Bearer ${token}`;
+          config.headers.Authorization = `Bearer ${userToken}`;
           return config;
         },
         (error) => Promise.reject(error)
       );
       
-      // Clean up the interceptor when token changes
       return () => {
         axiosInstance.interceptors.request.eject(interceptor);
       };
     }
-  }, [token]);
+  }, [userToken]);
 
   // Load user authentication data
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const storedUserId = await AsyncStorage.getItem('userId');
-        const storedToken = await AsyncStorage.getItem('userToken');
-        
-        if (storedUserId && storedToken) {
-          setUserId(storedUserId);
-          setToken(storedToken);
-        } else {
-          // If no user data, redirect to login
-          Alert.alert(
-            'Authentication Required',
-            'Please log in to use the emergency feature.',
-            [
-              { text: 'OK', onPress: () => router.replace('./') }
-            ]
-          );
+    if (!userId || !userToken) {
+      Alert.alert(
+        'Authentication Required',
+        'Please log in to use the emergency feature.',
+        [
+          { text: 'OK', onPress: () => router.replace('./') }
+        ]
+      );
+    }
+  }, [userId, userToken]);
+
+  // Register for push notifications
+  useEffect(() => {
+    const registerForPushNotifications = async () => {
+      if (userId) {
+        const token = await registerDeviceToken(userId);
+        if (token) {
+          setExpoPushToken(token);
         }
-      } catch (error) {
-        console.error('Error loading user data:', error);
       }
     };
-    
-    loadUserData();
-  }, []);
+
+    registerForPushNotifications();
+  }, [userId]);
 
   // Handle network state changes
   useEffect(() => {
@@ -252,7 +250,7 @@ const EmergencyPage = () => {
 
 // Simplified connection management
 const connectSocket = useCallback(() => {
-  if (!userId || !token || !isNetworkAvailable) {
+  if (!userId || !userToken || !isNetworkAvailable) {
     console.log('Cannot connect: missing auth or network');
     setConnectionStatus('disconnected');
     return;
@@ -275,7 +273,7 @@ const connectSocket = useCallback(() => {
     timeout: 20000,
     reconnection: false, // Handle reconnection manually
     forceNew: true,
-    query: { deviceId: userId, token }
+    query: { deviceId: userId, token: userToken }
   });
 
   // Simplified event handlers
@@ -303,7 +301,7 @@ const connectSocket = useCallback(() => {
 
   socketRef.current = newSocket;
   setSocket(newSocket);
-}, [userId, token, isNetworkAvailable, expoPushToken]);
+}, [userId, userToken, isNetworkAvailable, expoPushToken]);
 
 // Separate reconnection scheduling
 const scheduleReconnect = useCallback(() => {
@@ -325,42 +323,6 @@ const scheduleReconnect = useCallback(() => {
     return newAttempts;
   });
 }, [connectSocket]);
-
-  // Request notification permissions and get expoPushToken
-  useEffect(() => {
-    const getPushToken = async () => {
-      try {
-        const token = await registerForPushNotificationsAsync();
-        if (token) {
-          console.log('Expo Push Token:', token);
-          setExpoPushToken(token);
-          
-          // Register with your socket if it's connected
-          if (socketRef.current?.connected && userId) {
-            socketRef.current.emit('register_device', { 
-              deviceToken: token,
-              userId: userId 
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error getting push token:', error);
-      }
-    };
-
-    getPushToken();
-  }, [userId]);
-
-  // Handle reconnection when expoPushToken changes
-  useEffect(() => {
-    if (expoPushToken && socketRef.current?.connected && userId) {
-      // Update registration if we already have a connection
-      socketRef.current.emit('register_device', { 
-        deviceToken: expoPushToken,
-        userId: userId 
-      });
-    }
-  }, [expoPushToken, userId]);
 
   const sendPushNotification = async (message: string) => {
     try {
@@ -418,7 +380,7 @@ const scheduleReconnect = useCallback(() => {
 
   const handleEmergency = async () => {
     // Ensure user is authenticated
-    if (!userId || !token) {
+    if (!userId || !userToken) {
       Alert.alert('Authentication Required', 'Please log in again to continue.');
       router.replace('./');
       return;

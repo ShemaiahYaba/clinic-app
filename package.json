@@ -15,12 +15,12 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@expo/config-plugins": "~10.0.0",
+    "@expo/prebuild-config": "~9.0.0",
     "@expo/vector-icons": "^14.0.4",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/cli": "latest",
     "@react-native-community/netinfo": "^11.4.1",
-    "@react-native-firebase/app": "^22.2.1",
-    "@react-native-firebase/messaging": "^22.2.1",
     "@react-native/gradle-plugin": "^0.77.0",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.1",

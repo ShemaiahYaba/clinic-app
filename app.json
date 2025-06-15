@@ -2,12 +2,7 @@
   "expo": {
     "notification": {
       "icon": "./assets/images/notification_icon.png",
-      "color": "#1142BE",
-      "serviceWorkerPath": "firebase-messaging-sw.js",
-      "sounds": [
-        "./assets/sound/emergency_alert.wav"
-      ],
-      "vapidPublicKey": "BFPus9mtj_BrAjYMMGQLlwBcJaumtPM1TqKAM7xHU3f-CbrHLjMinZ7a8DSCR1iz75jkMs2yZ1rUPJvW9479AsY"
+      "color": "#1142BE"
     },
     "name": "emergency-alert-system",
     "slug": "clinic-app",
@@ -37,19 +32,9 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "INTERNET",
-        "RECEIVE_BOOT_COMPLETED",
-        "WAKE_LOCK",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
-        "MODIFY_AUDIO_SETTINGS",
-        "RECORD_AUDIO",
-        "POST_NOTIFICATIONS",
         "VIBRATE"
       ],
-      "package": "com.yabashiaka.clinicapp",
-      "useNextNotificationsApi": true,
-      "googleServicesFile": "./google-services.json"
+      "package": "com.yabashiaka.clinicapp"
     },
     "web": {
       "bundler": "metro",

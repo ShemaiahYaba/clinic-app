@@ -13,10 +13,10 @@ const EDGE_FUNCTION_URL = 'https://oxhjrszqngdyvbixxyvo.supabase.co/functions/v1
 const EmergencyRing = () => {
   const { isActive: emergencyActive, isSender } = useEmergencyAlert();
   const [loading, setLoading] = useState(true);
-  const [autoNavigateTimeout, setAutoNavigateTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [autoNavigateTimeout, setAutoNavigateTimeout] = useState<NodeJS.Timeout | number | null>(null);
   
   const shakeAnim = useRef(new Animated.Value(0)).current;
-  const shakeTimeout = useRef<NodeJS.Timeout | null>(null);
+  const shakeTimeout = useRef<NodeJS.Timeout | number | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
 
   const triggerEmergency = async () => {
@@ -43,11 +43,15 @@ const EmergencyRing = () => {
 
       // Call the Edge Function to send push notifications
       const response = await withRetry(async () => {
+        // Get the current session to retrieve the access token
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+
         return await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
+            ...(accessToken && { 'Authorization': `Bearer ${accessToken}` })
           },
           body: JSON.stringify({ sender_id: senderId })
         });

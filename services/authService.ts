@@ -12,6 +12,7 @@ interface AuthResponse {
   success: boolean;
   error?: string;
   user?: any;
+  session?: any; // <-- add this line
 }
 
 // const redirectTo =
@@ -104,7 +105,8 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 
     return {
       success: true,
-      user: data.user
+      user: data.user,
+      session: data.session
     };
   } catch (error: any) {
     console.error('Login error:', error);

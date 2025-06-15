@@ -205,24 +205,27 @@ export const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const setUserAuth = useCallback(async (id: string, token: string) => {
     try {
       setState(prevState => ({ ...prevState, isLoading: true, error: null }));
-      
-      await Promise.all([
-        AsyncStorage.setItem(STORAGE_KEYS.USER_ID, id),
-        AsyncStorage.setItem(STORAGE_KEYS.USER_TOKEN, token)
-      ]);
-      
-      setState(prevState => ({ 
-        ...prevState, 
+
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, id);
+
+      if (token === undefined || token === null) {
+        await AsyncStorage.removeItem(STORAGE_KEYS.USER_TOKEN);
+      } else {
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_TOKEN, token);
+      }
+
+      setState(prevState => ({
+        ...prevState,
         userId: id,
         userToken: token,
         isLoading: false
       }));
     } catch (error) {
       console.error('Error saving user authentication:', error);
-      setState(prevState => ({ 
-        ...prevState, 
+      setState(prevState => ({
+        ...prevState,
         isLoading: false,
-        error: 'Failed to save authentication data' 
+        error: 'Failed to save authentication data'
       }));
       throw error;
     }

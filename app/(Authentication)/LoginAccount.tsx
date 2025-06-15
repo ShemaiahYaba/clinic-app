@@ -34,7 +34,7 @@ export default function LoginAccount() {
       }
 
       if (response.user?.id) {
-        await setUserAuth(response.user.id, response.user.session?.access_token);
+        await setUserAuth(response.user.id, response.session?.access_token);
         router.push("/(EmergenySelection)/HostelPage");
       } else {
         Alert.alert("Login Error", "Unexpected response from server.");

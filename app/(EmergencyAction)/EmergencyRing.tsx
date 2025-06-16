@@ -44,8 +44,8 @@ const EmergencyRing = () => {
       // Call the Edge Function to send push notifications
       const response = await withRetry(async () => {
         // Get the current session to retrieve the access token
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData?.session?.access_token;
+        const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = session?.access_token;
 
         return await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',

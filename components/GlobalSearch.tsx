@@ -1,12 +1,13 @@
 import React, { createContext, useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '@/config/constants';
+import { EmergencyAlertData } from '@/types/api';
 
 // Define types for our emergency alert system
 interface EmergencyAlert {
   isActive: boolean;
   timestamp: number | null;
-  source?: string;
-  details?: string;
+  details: string;
   isSender: boolean;
   receivedFrom?: string;
 }
@@ -30,6 +31,7 @@ interface GlobalContextType extends GlobalState {
   setUserAuth: (id: string, token: string) => Promise<void>;
   clearUserAuth: () => Promise<void>;
   resetError: () => void;
+  getEmergencyState: () => Promise<EmergencyAlertData | null>;
 }
 
 const DEFAULT_STATE: GlobalState = {
@@ -39,23 +41,13 @@ const DEFAULT_STATE: GlobalState = {
     isActive: false,
     timestamp: null,
     details: '',
-    isSender: false,
-    receivedFrom: undefined
+    isSender: false
   },
   userId: null,
   userToken: null,
-  isLoading: true,
+  isLoading: false,
   error: null
 };
-
-// Storage keys as constants for consistency
-const STORAGE_KEYS = {
-  HOSTEL_NAME: '@hexa_hostelname',
-  SICKNESS: '@hexa_sickness',
-  EMERGENCY: '@hexa_emergency',
-  USER_ID: '@userId',
-  USER_TOKEN: '@userToken',
-} as const;
 
 // Create context with undefined default value
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
@@ -267,6 +259,16 @@ export const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setState(prevState => ({ ...prevState, error: null }));
   }, []);
 
+  const getEmergencyState = useCallback(async (): Promise<EmergencyAlertData | null> => {
+    try {
+      const emergencyData = await AsyncStorage.getItem(STORAGE_KEYS.EMERGENCY);
+      return emergencyData ? JSON.parse(emergencyData) : null;
+    } catch (error) {
+      console.error('Error getting emergency state:', error);
+      return null;
+    }
+  }, []);
+
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     ...state,
@@ -277,7 +279,8 @@ export const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     initializeState,
     setUserAuth,
     clearUserAuth,
-    resetError
+    resetError,
+    getEmergencyState
   }), [
     state, 
     setHostelname, 
@@ -287,7 +290,8 @@ export const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     initializeState, 
     setUserAuth, 
     clearUserAuth,
-    resetError
+    resetError,
+    getEmergencyState
   ]);
 
   return (

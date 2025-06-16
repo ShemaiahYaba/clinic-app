@@ -1,16 +1,17 @@
 {
   "expo": {
     "notification": {
-      "icon": "./assets/images/notification_icon.png",
-      "color": "#1142BE"
+      "icon": "./assets/images/notification-icon.png",
+      "color": "#ffffff",
+      "androidMode": "default",
+      "androidCollapsedTitle": "HEXA"
     },
-    "name": "emergency-alert-system",
+    "name": "Clinic App",
     "slug": "clinic-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -18,50 +19,31 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yabashiaka.clinicapp",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": [
-          "remote-notification"
-        ]
-      }
+      "bundleIdentifier": "com.hexa.clinicapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [
-        "VIBRATE"
-      ],
-      "package": "com.yabashiaka.clinicapp"
+      "package": "com.hexa.clinicapp",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "bundler": "metro",
-      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "assetBundlePatterns": [
-      "**/*",
-      "node_modules/react-native-vector-icons/Fonts/*"
+      "**/*"
     ],
     "plugins": [
-      "expo-router",
-      "expo-background-fetch",
-      "expo-task-manager",
-      "expo-av",
       [
         "expo-notifications",
         {
           "icon": "./assets/images/notification_icon.png",
-          "color": "#1142BE",
-          "sounds": [
-            "./assets/sound/emergency_alert.wav"
-          ]
+          "color": "#ffffff",
+          "sounds": ["./assets/sound/emergency_alert.wav"]
         }
-      ],
-      "expo-font",
-      "expo-web-browser"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -41,9 +41,14 @@
         {
           "icon": "./assets/images/notification_icon.png",
           "color": "#ffffff",
-          "sounds": ["./assets/sound/emergency_alert.wav"]
+          "sounds": [
+            "./assets/sound/emergency_alert.wav"
+          ]
         }
-      ]
+      ],
+      "expo-font",
+      "expo-router",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

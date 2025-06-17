@@ -48,6 +48,7 @@ export default function RootLayout() {
       try {
         await loadFonts();
         setFontsLoaded(true);
+        await SplashScreen.hideAsync();
       } catch (e) {
         console.warn(e);
       }

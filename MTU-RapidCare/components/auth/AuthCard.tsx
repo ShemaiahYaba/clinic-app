@@ -19,7 +19,7 @@ export function AuthCard({ children, activeTab, onTabChange }: AuthCardProps) {
         <Text style={styles.title}>
           {activeTab === 'login' ? 'Welcome Back' : 'Welcome to'}
           {'\n'}
-          <Text style={styles.titleHighlight}>MTU-RAPIDCARE</Text>
+          <Text style={styles.titleHighlight}>MTU-RapidCare</Text>
         </Text>
         <Text style={styles.description}>
           {activeTab === 'login' 

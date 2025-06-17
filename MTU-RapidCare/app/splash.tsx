@@ -32,7 +32,7 @@ export default function SplashScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         <AppLogo size={120} />
-        <Text style={styles.title}>MTU-RAPIDCARE</Text>
+        <Text style={styles.title}>MTU-RapidCare</Text>
         <Text style={styles.subtitle}>Emergency Response System</Text>
         
         <View style={styles.progressContainer}>

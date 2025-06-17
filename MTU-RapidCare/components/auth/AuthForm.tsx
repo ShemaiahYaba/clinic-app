@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { loginUser, signupUser } from '@/lib/auth';
 import { AppLogo } from '@/components/Logo';
-import type { RootStackParamList, AppRoutes } from '@/app/types';
+import type { RootStackParamList, AppRoutes } from '@/types/navigation';
 
 const loginSchema = z.object({
   identifier: z.string().min(1, { message: "Please enter your email or username." }),

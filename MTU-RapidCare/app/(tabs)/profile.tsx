@@ -1,13 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 
 export default function ProfileScreen() {
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    router.replace('/auth');
-  };
 
   return (
     <View style={styles.container}>
@@ -28,14 +23,14 @@ export default function ProfileScreen() {
               <Ionicons name="pencil" size={16} color="#ffffff" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.name}>John Doe</Text>
-          <Text style={styles.email}>john.doe@example.com</Text>
+          <Text style={styles.name}>RapidCare 01</Text>
+          <Text style={styles.deviceId}>Device ID: 1234567890</Text>
         </View>
 
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="person-outline" size={24} color="#1e293b" />
-            <Text style={styles.menuText}>Personal Information</Text>
+            <Text style={styles.menuText}>Device Information</Text>
             <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
           </TouchableOpacity>
 
@@ -47,21 +42,18 @@ export default function ProfileScreen() {
 
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="shield-outline" size={24} color="#1e293b" />
-            <Text style={styles.menuText}>Privacy & Security</Text>
+            <Text style={styles.menuText}>Register Device</Text>
             <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="help-circle-outline" size={24} color="#1e293b" />
-            <Text style={styles.menuText}>Help & Support</Text>
+            <Text style={styles.menuText}>Contact Support</Text>
             <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={24} color="#dc2626" />
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+        
       </ScrollView>
     </View>
   );
@@ -134,7 +126,7 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginBottom: 4,
   },
-  email: {
+  deviceId: {
     fontSize: 14,
     fontFamily: 'Poppins-Regular',
     color: '#64748b',

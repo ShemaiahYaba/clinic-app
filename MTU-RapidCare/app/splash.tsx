@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { router } from 'expo-router';
 import { AppLogo } from '@/components/Logo';
-import { isAuthenticated } from '@/lib/auth';
 
 export default function SplashScreen() {
   const progress = React.useRef(new Animated.Value(0)).current;
@@ -18,11 +17,7 @@ export default function SplashScreen() {
 
     // Navigate after animation completes
     const timer = setTimeout(() => {
-      if (isAuthenticated()) {
-        router.replace('/');
-      } else {
-        router.replace('/auth');
-      }
+      router.replace('/(tabs)/home');
     }, 5000); // Match the animation duration
 
     return () => clearTimeout(timer);

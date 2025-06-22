@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { AppLogo } from '@/components/Logo';
 import { Greeting } from '@/components/Home/Greeting';
 import { EmergencyHistoryCard } from '@/components/Home/EmergencyHistoryCard';
-import { ReportEmergencyFlow } from '@/components/Home/ReportEmergencyFlow';
 
 export default function HomeScreen() {
-  const [isEmergencyModalVisible, setIsEmergencyModalVisible] = useState(false);
-
-  const handleEmergencySubmitted = () => {
-    setIsEmergencyModalVisible(false);
-  };
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -29,7 +23,7 @@ export default function HomeScreen() {
         <View style={styles.actionCard}>
           <TouchableOpacity 
             style={styles.emergencyButton}
-            onPress={() => setIsEmergencyModalVisible(true)}
+            onPress={() => router.push('/emergency-report')}
           >
             <Ionicons name="alert-circle-outline" size={32} color="#dc2626" />
             <Text style={styles.emergencyButtonText}>Report Emergency</Text>
@@ -38,22 +32,6 @@ export default function HomeScreen() {
 
         <EmergencyHistoryCard />
       </View>
-
-      <Modal
-        visible={isEmergencyModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsEmergencyModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <ReportEmergencyFlow
-              onSubmitted={handleEmergencySubmitted}
-              onCancel={() => setIsEmergencyModalVisible(false)}
-            />
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
@@ -114,17 +92,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Poppins-SemiBold',
     color: '#dc2626',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
-    maxHeight: '90%',
   },
 }); 

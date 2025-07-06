@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { useGlobal } from '@/components/GlobalSearch';
+import { useGlobal } from '@/components/GlobalContext';
 import { EmergencyAlertData } from '@/types/api';
-import { handleApiError } from '@/utils/error';
+import { handleApiError, handleEmergencyError } from '@/utils/errorHandler';
 import { ApiResponse } from '@/types/api';
 import { supabase } from '@/lib/supabase';
 import { CONFIG } from '@/config/constants';
@@ -11,62 +11,48 @@ export const useEmergencyAlert = () => {
 
   const triggerEmergency = useCallback(async (message: string): Promise<ApiResponse<EmergencyAlertData>> => {
     try {
-      // Get current session for auth
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No active session');
-      }
+      // Temporarily disable Supabase auth for UI testing
+      // const { data: { session } } = await supabase.auth.getSession();
+      // if (!session?.access_token) {
+      //   throw new Error('No active session');
+      // }
 
-      // Insert alert into database
-      const { data: alert, error: dbError } = await supabase
-        .from('alerts')
-        .insert([{ message, status: 'active' }])
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
-      // Send notifications via edge function
-      const response = await fetch(`${CONFIG.EDGE_FUNCTION_URL}/send-notifications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ alertId: alert.id })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send notifications');
-      }
+      // Simulate successful response for UI testing
+      const mockAlert = {
+        id: 'mock-alert-id',
+        message,
+        status: 'active' as const,
+        created_at: new Date().toISOString(),
+        sender_id: 'mock-user-id'
+      };
 
       // Update local state
-      setEmergencyAlert(true, message, session.user.id);
+      setEmergencyAlert(true, message, 'mock-user-id');
 
       return {
         success: true,
-        data: alert
+        data: mockAlert
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleEmergencyError(error) as ApiResponse<EmergencyAlertData>;
     }
   }, [setEmergencyAlert]);
 
   const resolveEmergency = useCallback(async (alertId: string): Promise<ApiResponse<void>> => {
     try {
-      // Get current session for auth
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No active session');
-      }
+      // Temporarily disable Supabase auth for UI testing
+      // const { data: { session } } = await supabase.auth.getSession();
+      // if (!session?.access_token) {
+      //   throw new Error('No active session');
+      // }
 
-      // Update alert status
-      const { error: dbError } = await supabase
-        .from('alerts')
-        .update({ status: 'resolved' })
-        .eq('id', alertId);
+      // Simulate successful resolution for UI testing
+      // const { error: dbError } = await supabase
+      //   .from('alerts')
+      //   .update({ status: 'resolved' })
+      //   .eq('id', alertId);
 
-      if (dbError) throw dbError;
+      // if (dbError) throw dbError;
 
       // Clear local state
       setEmergencyAlert(false);
@@ -75,7 +61,7 @@ export const useEmergencyAlert = () => {
         success: true
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleEmergencyError(error) as ApiResponse<void>;
     }
   }, [setEmergencyAlert]);
 
@@ -87,7 +73,7 @@ export const useEmergencyAlert = () => {
         data: state
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleEmergencyError(error) as ApiResponse<EmergencyAlertData | null>;
     }
   }, [getEmergencyState]);
 

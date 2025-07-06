@@ -8,6 +8,9 @@ import { toastConfig } from '@/components/ui/Toast';
 import * as SplashScreen from 'expo-splash-screen';
 import { loadFonts } from '@/lib/fonts';
 import React from 'react';
+import { GlobalProvider } from '@/components/GlobalContext';
+import { RefreshProvider } from '@/components/RefreshContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -62,36 +65,38 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? darkTheme : lightTheme}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade',
-          animationDuration: 200,
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen 
-          name="splash" 
-          options={{
-            animation: 'none',
-          }}
-        />
-        <Stack.Screen 
-          name="auth" 
-          options={{
-            animation: 'fade',
-          }}
-        />
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{
-            animation: 'fade',
-          }}
-        />
-      </Stack>
-      <Toast config={toastConfig} />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? darkTheme : lightTheme}>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <RefreshProvider>
+          <GlobalProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: 'fade',
+                animationDuration: 200,
+              }}
+              initialRouteName="splash"
+            >
+              <Stack.Screen name="splash" />
+              <Stack.Screen name="index" />
+              <Stack.Screen 
+                name="(tabs)" 
+                options={{
+                  animation: 'fade',
+                }}
+              />
+              <Stack.Screen
+              name="emergency-report"
+              options={{
+                presentation: 'modal',
+              }}
+              />
+            </Stack>
+            <Toast config={toastConfig} />
+          </GlobalProvider>
+        </RefreshProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

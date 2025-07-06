@@ -20,7 +20,6 @@ export function Greeting() {
       setGreeting('Good evening');
       setGreetingIcon('moon');
     }
-;
   }, []);
 
   if (greetingIcon === 'sunny') {

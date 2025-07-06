@@ -4,9 +4,7 @@ export const STORAGE_KEYS = {
   HOSTEL_NAME: '@hexa_hostelname',
   SICKNESS: '@hexa_sickness',
   EMERGENCY: '@hexa_emergency',
-  USER_ID: '@userId',
-  USER_TOKEN: '@userToken',
-} as const;
+};
 
 export const NOTIFICATION_CHANNEL = {
   id: 'default',

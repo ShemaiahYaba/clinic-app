@@ -47,9 +47,7 @@
       }
     },
     "owner": "yabashiaka",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/75a97b04-b497-44fb-8ed7-c37df4097415"
     }

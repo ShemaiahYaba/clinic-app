@@ -15,21 +15,15 @@ export const CONFIG = {
 } as const;
 
 export const STORAGE_KEYS = {
-  USER_ID: 'userId',
-  USER_TOKEN: 'userToken',
   HOSTEL_NAME: 'hostelName',
   SICKNESS: 'sickness',
   EMERGENCY: 'emergency',
-  DEVICE_TOKEN: 'deviceToken'
 } as const;
 
 export const ERROR_MESSAGES = {
   UNEXPECTED_ERROR: 'An unexpected error occurred',
-  NO_SESSION: 'No active session',
-  INVALID_CREDENTIALS: 'Invalid credentials',
   NETWORK_ERROR: 'Network error occurred',
   DATABASE_ERROR: 'Database error occurred',
-  AUTH_ERROR: 'Authentication failed. Please try logging in again.',
   VALIDATION_ERROR: 'Please check your input and try again.',
   EMERGENCY_ERROR: 'Failed to trigger emergency alert. Please try again.'
 } as const; 

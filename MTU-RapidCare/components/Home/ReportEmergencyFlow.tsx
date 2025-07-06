@@ -3,6 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import Toast from 'react-native-toast-message';
+import { triggerEmergency } from '@/utils/emergency';
+import { useToast } from '@/hooks/useToast';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const EDGE_FUNCTION_URL = "https://oxhjrszqngdyvbixxyvo.supabase.co/functions/v1/send-push-alert";
 
 type EmergencyType = "Heart Attack" | "Accident" | "Fire" | "Other";
 type FlowStep = 'selectType' | 'selectHostel' | 'confirmDetails';
@@ -53,6 +58,7 @@ export function ReportEmergencyFlow({ onSubmitted, onCancel }: ReportEmergencyFl
   const [selectedEmergency, setSelectedEmergency] = useState<EmergencyType | null>(null);
   const [selectedHostel, setSelectedHostel] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { show } = useToast();
 
   const handleTypeSelect = (emergencyType: EmergencyType) => {
     setSelectedEmergency(emergencyType);
@@ -71,24 +77,42 @@ export function ReportEmergencyFlow({ onSubmitted, onCancel }: ReportEmergencyFl
     }
   };
 
-  const handleSubmitReport = () => {
+  const handleSubmitReport = async () => {
     if (!selectedEmergency || !selectedHostel) return;
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      console.log(`Emergency Reported: ${selectedEmergency} at ${selectedHostel}.`);
-      Toast.show({
-        type: 'success',
-        text1: 'Alert Triggered!',
-        text2: `${selectedEmergency} at ${selectedHostel} reported. Help is on the way.`,
-      });
-      // Reset state for next time
-      setStep('selectType');
-      setSelectedEmergency(null);
-      setSelectedHostel(null);
+    try {
+      // Retrieve device ID from AsyncStorage
+      const senderDeviceId = await AsyncStorage.getItem('device_id');
+      if (!senderDeviceId) {
+        show({ type: 'error', text1: 'Device not registered.' });
+        setIsSubmitting(false);
+        return;
+      }
+      const message = `${selectedEmergency} at ${selectedHostel}`;
+      const location = selectedHostel;
+      const extraData = { emergencyType: selectedEmergency };
+      const result = await triggerEmergency(senderDeviceId, message, location, extraData);
+      if (result.success) {
+        // Call Edge Function to send notifications
+        await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender_device_id: senderDeviceId, message, location, extra_data: extraData })
+        });
+        show({ type: 'success', text1: 'Alert Triggered!', text2: `${selectedEmergency} at ${selectedHostel} reported. Help is on the way.` });
+        setStep('selectType');
+        setSelectedEmergency(null);
+        setSelectedHostel(null);
+        setIsSubmitting(false);
+        onSubmitted();
+      } else {
+        show({ type: 'error', text1: result.error || 'Failed to trigger alert.' });
+        setIsSubmitting(false);
+      }
+    } catch (e) {
+      show({ type: 'error', text1: 'Failed to trigger alert.' });
       setIsSubmitting(false);
-      onSubmitted(); // Close the dialog
-    }, 1500);
+    }
   };
 
   const handleBack = () => {
@@ -104,7 +128,7 @@ export function ReportEmergencyFlow({ onSubmitted, onCancel }: ReportEmergencyFl
     return (
       <View style={styles.container}>
         <Text style={styles.description}>
-          Choose the nature of the emergency. You will select the location next.
+          What type of emergency is it?
         </Text>
         <View style={styles.grid}>
           {emergencyTypesConfig.map((emergency) => (

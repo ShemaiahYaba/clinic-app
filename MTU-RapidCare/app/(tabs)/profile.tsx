@@ -1,8 +1,59 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, Alert, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { registerDevice } from '@/services/deviceService';
+import * as Notifications from 'expo-notifications';
+import { useToast } from '@/hooks/useToast';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '@/lib/supabase';
+import { useRefresh } from '@/components/RefreshContext';
+import { fetchDeviceInfo } from '@/utils/globalFetchers';
 
 export default function ProfileScreen() {
+  const { isOnline } = useNetworkStatus();
+  const { show } = useToast();
+  const [deviceName, setDeviceName] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const { refreshing, refreshAll, registerFetcher, unregisterFetcher } = useRefresh();
+
+  const loadDeviceInfo = useCallback(() => fetchDeviceInfo(setDeviceName, setDeviceId), []);
+
+  useEffect(() => {
+    loadDeviceInfo();
+    registerFetcher(loadDeviceInfo);
+    return () => unregisterFetcher(loadDeviceInfo);
+  }, []);
+
+  const handleRegisterDevice = async () => {
+    // Get Expo push token
+    let expoToken = '';
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        Alert.alert('Permission required', 'Push notification permission is required to register your device.');
+        return;
+      }
+      const tokenData = await Notifications.getExpoPushTokenAsync();
+      expoToken = tokenData.data;
+    } catch (e) {
+      Alert.alert('Error', 'Failed to get push notification token.');
+      return;
+    }
+    const platform = Platform.OS;
+    const result = await registerDevice(expoToken, platform);
+    if (result.success && result.data?.id) {
+      await AsyncStorage.setItem('device_id', result.data.id);
+      show({ type: 'success', text1: 'Device registered successfully!' });
+    } else {
+      show({ type: 'error', text1: result.error || 'Failed to register device.' });
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -13,18 +64,29 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshAll}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+      >
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={40} color="#94a3b8" />
+              <Ionicons name="phone-portrait" size={40} color="#94a3b8" />
+              <View style={[
+                styles.onlineIndicator,
+                { backgroundColor: isOnline ? '#4ade80' : '#ef4444' }
+              ]} />
             </View>
-            <TouchableOpacity style={styles.editButton}>
-              <Ionicons name="pencil" size={16} color="#ffffff" />
-            </TouchableOpacity>
           </View>
-          <Text style={styles.name}>RapidCare 01</Text>
-          <Text style={styles.deviceId}>Device ID: 1234567890</Text>
+          <Text style={styles.name}>{deviceName ? deviceName : 'Register Device'}</Text>
+          <Text style={styles.deviceId}>{deviceId ? `Device ID: ${deviceId}` : ''}</Text>
         </View>
 
         <View style={styles.menuSection}>
@@ -40,7 +102,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleRegisterDevice}>
             <Ionicons name="shield-outline" size={24} color="#1e293b" />
             <Text style={styles.menuText}>Register Device</Text>
             <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
@@ -52,8 +114,6 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
           </TouchableOpacity>
         </View>
-
-        
       </ScrollView>
     </View>
   );
@@ -107,19 +167,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  editButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#2563eb',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#ffffff',
-  },
   name: {
     fontSize: 20,
     fontFamily: 'Poppins-SemiBold',
@@ -165,5 +212,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Poppins-SemiBold',
     color: '#dc2626',
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
 }); 

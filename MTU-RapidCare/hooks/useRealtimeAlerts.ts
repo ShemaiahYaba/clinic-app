@@ -4,12 +4,13 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { ERROR_MESSAGES } from '@/config/constants';
-import { useGlobal } from '@/components/GlobalSearch';
+import { useGlobal } from '@/components/GlobalContext';
+import { handleNetworkError } from '@/utils/errorHandler';
 
 interface AlertPayload {
   new: {
     id: string;
-    sender_id: string;
+    sender_device_id: string;
     message: string;
     created_at: string;
     status: string;
@@ -26,9 +27,13 @@ export const useRealtimeAlerts = () => {
 
     const setupRealtimeSubscription = async () => {
       try {
-        // Get the current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        // Temporarily disable Supabase auth check for UI testing
+        // const { data: { user } } = await supabase.auth.getUser();
+        // if (!user) return;
+        
+        // For now, just set connected to true for UI testing
+        setIsConnected(true);
+        return;
 
         // Subscribe to new alerts
         subscription = supabase
@@ -46,7 +51,7 @@ export const useRealtimeAlerts = () => {
               const alertData = payload.new as AlertPayload['new'];
               if (alertData && alertData.status === 'active') {
                 // Update global state
-                setEmergencyAlert(true, alertData.message, alertData.sender_id);
+                setEmergencyAlert(true, alertData.message, alertData.sender_device_id);
 
                 // Trigger notification
                 await Notifications.scheduleNotificationAsync({
@@ -55,7 +60,7 @@ export const useRealtimeAlerts = () => {
                     body: alertData.message,
                     data: {
                       id: alertData.id,
-                      sender_id: alertData.sender_id,
+                      sender_device_id: alertData.sender_device_id,
                       message: alertData.message,
                       created_at: alertData.created_at
                     },
@@ -72,13 +77,13 @@ export const useRealtimeAlerts = () => {
 
         // Handle connection errors
         subscription.on('error', (error: any) => {
-          console.error('Subscription error:', error);
+          handleNetworkError(error);
           setIsConnected(false);
           scheduleReconnect();
         });
 
       } catch (error) {
-        console.error('Error setting up realtime subscription:', error);
+        handleNetworkError(error);
         setIsConnected(false);
         scheduleReconnect();
       }

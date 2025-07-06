@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
+import { useGlobal } from '../components/GlobalContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type EmergencyType = "Heart Attack" | "Accident" | "Fire" | "Other";
 type FlowStep = 'selectType' | 'selectHostel' | 'confirmDetails';
+
+
 
 const emergencyTypesConfig = [
   { 
@@ -33,18 +37,6 @@ const emergencyTypesConfig = [
     color: "#3b82f6",
     bgColor: "#dbeafe"
   },
-  { 
-    name: "Other" as EmergencyType, 
-    icon: "shield", 
-    color: "#3b82f6",
-    bgColor: "#dbeafe"
-  },
-  { 
-    name: "Other" as EmergencyType, 
-    icon: "shield", 
-    color: "#3b82f6",
-    bgColor: "#dbeafe"
-  },
 ] as const;
 
 const hostelOptions = [
@@ -57,10 +49,17 @@ const hostelOptions = [
 ];
 
 export default function EmergencyReportPage() {
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<FlowStep>('selectType');
   const [selectedEmergency, setSelectedEmergency] = useState<EmergencyType | null>(null);
   const [selectedHostel, setSelectedHostel] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Slide up animation state for the trigger button
+  const slideUpAnim = useRef(new Animated.Value(0)).current;
+
+  // Access global context for emergency alert
+  const { setEmergencyAlert } = useGlobal();
 
   const handleTypeSelect = (emergencyType: EmergencyType) => {
     setSelectedEmergency(emergencyType);
@@ -79,24 +78,70 @@ export default function EmergencyReportPage() {
     }
   };
 
-  const handleSubmitReport = () => {
+  const handleAnimatedSubmit = () => {
+    if (isSubmitting) return;
+    Animated.timing(slideUpAnim, {
+      toValue: -60, // Slide up by 60px
+      duration: 400,
+      useNativeDriver: true,
+    }).start(() => {
+      handleSubmitReport();
+      setTimeout(() => {
+        slideUpAnim.setValue(0); // Reset for next time
+      }, 1000);
+    });
+  };
+
+  const handleSubmitReport = async () => {
     if (!selectedEmergency || !selectedHostel) return;
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      console.log(`Emergency Reported: ${selectedEmergency} at ${selectedHostel}.`);
+    
+    try {
+      const { triggerEmergencyAlert } = await import('@/utils/database');
+      // Get device ID
+      const senderDeviceId = await AsyncStorage.getItem('device_id');
+      if (!senderDeviceId) {
+        Toast.show({
+          type: 'error',
+          text1: 'Device Not Registered',
+          text2: 'You must register your device before sending an alert.',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      // Create the emergency alert in Supabase and trigger notification
+      const message = `${selectedEmergency} at ${selectedHostel}`;
+      const result = await triggerEmergencyAlert(senderDeviceId, message, selectedHostel);
+      
+      if (result.success) {
+        setEmergencyAlert(true, message);
+        Toast.show({
+          type: 'success',
+          text1: 'Alert Triggered!',
+          text2: `${selectedEmergency} at ${selectedHostel} reported. Help is on the way.`,
+        });
+        setStep('selectType');
+        setSelectedEmergency(null);
+        setSelectedHostel(null);
+        setIsSubmitting(false);
+        router.push('/(tabs)/home');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to Report',
+          text2: result.error || 'Unable to send emergency alert. Please try again.',
+        });
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error('Emergency report error:', error);
       Toast.show({
-        type: 'success',
-        text1: 'Alert Triggered!',
-        text2: `${selectedEmergency} at ${selectedHostel} reported. Help is on the way.`,
+        type: 'error',
+        text1: 'Connection Error',
+        text2: 'Unable to connect to emergency services. Please check your connection.',
       });
-      // Reset state for next time
-      setStep('selectType');
-      setSelectedEmergency(null);
-      setSelectedHostel(null);
       setIsSubmitting(false);
-      router.back(); // Navigate back to home
-    }, 1500);
+    }
   };
 
   const handleBack = () => {
@@ -111,7 +156,14 @@ export default function EmergencyReportPage() {
   };
 
   const handleCancel = () => {
-    router.back();
+    // Reset state before navigating
+    setStep('selectType');
+    setSelectedEmergency(null);
+    setSelectedHostel(null);
+    setIsSubmitting(false);
+    
+    // Navigate back to home screen
+    router.push('/(tabs)/home');
   };
 
   const renderContent = () => {
@@ -135,11 +187,6 @@ export default function EmergencyReportPage() {
               </TouchableOpacity>
             ))}
           </View>
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       );
     }
@@ -147,47 +194,29 @@ export default function EmergencyReportPage() {
     if (step === 'selectHostel' && selectedEmergency) {
       return (
         <View style={styles.container}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={16} color="#6b7280" />
-            <Text style={styles.backButtonText}>Back to types</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.title}>
-            Selected Emergency: <Text style={styles.highlight}>{selectedEmergency}</Text>
-          </Text>
-
           <View style={styles.pickerContainer}>
             <Text style={styles.label}>Select Hostel</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={selectedHostel}
-                onValueChange={(value) => setSelectedHostel(value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Choose a hostel..." value="" />
-                {hostelOptions.map(hostel => (
-                  <Picker.Item key={hostel} label={hostel} value={hostel} />
-                ))}
-              </Picker>
+            <View style={styles.hostelListWrapper}>
+              {hostelOptions.map((hostel) => (
+                <TouchableOpacity
+                  key={hostel}
+                  style={[
+                    styles.hostelListItem,
+                    selectedHostel === hostel && styles.selectedHostelListItem,
+                  ]}
+                  onPress={() => setSelectedHostel(hostel)}
+                >
+                  <Text
+                    style={[
+                      styles.hostelListItemText,
+                      selectedHostel === hostel && styles.selectedHostelListItemText,
+                    ]}
+                  >
+                    {hostel}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </View>
-
-          <View style={styles.locationInfo}>
-            <Ionicons name="location" size={14} color="#2563eb" />
-            <Text style={styles.locationText}>Your location will be shared upon confirmation.</Text>
-          </View>
-
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={isSubmitting}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.nextButton, !selectedHostel && styles.disabledButton]} 
-              onPress={handleHostelConfirm}
-              disabled={!selectedHostel || isSubmitting}
-            >
-              <Text style={styles.nextButtonText}>Next</Text>
-            </TouchableOpacity>
           </View>
         </View>
       );
@@ -196,11 +225,6 @@ export default function EmergencyReportPage() {
     if (step === 'confirmDetails' && selectedEmergency && selectedHostel) {
       return (
         <View style={styles.container}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={16} color="#6b7280" />
-            <Text style={styles.backButtonText}>Back to select hostel</Text>
-          </TouchableOpacity>
-
           <Text style={styles.confirmTitle}>Confirm Report Details</Text>
 
           <View style={styles.detailsCard}>
@@ -221,27 +245,22 @@ export default function EmergencyReportPage() {
           </View>
 
           <View style={styles.confirmButtons}>
-            <TouchableOpacity 
-              style={[styles.triggerButton, isSubmitting && styles.disabledButton]} 
-              onPress={handleSubmitReport}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <>
-                  <Text style={styles.triggerButtonText}>Trigger Alert</Text>
-                  <Ionicons name="send" size={16} color="#ffffff" />
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.cancelButton, styles.fullWidth]} 
-              onPress={handleCancel}
-              disabled={isSubmitting}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            <View style={styles.roundButtonContainer}>
+              <Animated.View style={[styles.animatedRoundButton, { transform: [{ translateY: slideUpAnim }] }]}> 
+                <TouchableOpacity
+                  style={[styles.roundTriggerButton, isSubmitting && styles.disabledButton]}
+                  onPress={handleAnimatedSubmit}
+                  disabled={isSubmitting}
+                  activeOpacity={0.8}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Ionicons name="warning" size={36} color="#ffffff" />
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
           </View>
         </View>
       );
@@ -265,6 +284,7 @@ export default function EmergencyReportPage() {
 
   return (
     <View style={styles.pageContainer}>
+      
       {/* Fixed Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBackButton} onPress={handleBack}>
@@ -276,8 +296,30 @@ export default function EmergencyReportPage() {
 
       {/* Scrollable Content */}
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {renderContent()}
+        <View style={styles.contentContainer}>
+          {renderContent()}
+        </View>
+        
       </ScrollView>
+
+      {/* Fixed Footer */}
+      <View style={[styles.fixedFooter, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={styles.footerContent}>
+          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          
+          {step === 'selectHostel' && (
+            <TouchableOpacity 
+              style={[styles.nextButton, !selectedHostel && styles.disabledButton]} 
+              onPress={handleHostelConfirm}
+              disabled={!selectedHostel || isSubmitting}
+            >
+              <Text style={styles.nextButtonText}>Next</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
     </View>
   );
 }
@@ -380,18 +422,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: 20,
     fontWeight: '500',
     marginBottom: 8,
   },
-  pickerWrapper: {
+  hostelListWrapper: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#ffffff',
     borderRadius: 8,
     backgroundColor: '#ffffff',
   },
-  picker: {
-    height: 50,
+  hostelListItem: {
+    padding: 20,
+  },
+  selectedHostelListItem: {
+    backgroundColor: '#e5e7eb',
+  },
+  hostelListItemText: {
+    fontSize: 20,
+    fontWeight: '500',
+  },
+  selectedHostelListItemText: {
+    fontWeight: '600',
   },
   locationInfo: {
     flexDirection: 'row',
@@ -424,7 +476,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   confirmTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 16,
@@ -447,31 +499,96 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   detailValue: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
   },
   confirmButtons: {
-    marginTop: 24,
+    marginTop: 50,
     gap: 12,
-  },
-  triggerButton: {
-    backgroundColor: '#dc2626',
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-    borderRadius: 8,
+    minHeight: 120,
   },
-  triggerButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  roundButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 150,
+    width: '50%',
+    position: 'relative',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 24,
+    paddingVertical: 16,
+  },
+  animatedRoundButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 80,
+  },
+  roundTriggerButton: {
+    width: 180,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: '#dc2626',
+    borderWidth: 3,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
   disabledButton: {
     opacity: 0.5,
   },
   fullWidth: {
     width: '100%',
+  },
+  contentContainer: {
+    padding: 16,
+  },
+  fixedFooter: {
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  footerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  hostelSwitchItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    borderRadius: 28,
+    backgroundColor: '#f1f5f9',
+    marginRight: 12,
+  },
+  hostelSwitchItemText: {
+    fontSize: 22,
+    color: '#1e293b',
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  selectedHostelSwitchItem: {
+    backgroundColor: '#2563eb',
+    borderWidth: 3,
+    borderColor: '#1e293b',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  selectedHostelSwitchItemText: {
+    color: '#fff',
+    fontWeight: '900',
+    letterSpacing: 1,
+    fontSize: 24,
   },
 }); 

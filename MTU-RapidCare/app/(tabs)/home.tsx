@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { AppLogo } from '@/components/Logo';
 import { Greeting } from '@/components/Home/Greeting';
-import { EmergencyHistoryCard } from '@/components/Home/EmergencyHistoryCard';
 import appJson from '../../app.json';
 import { useGlobal } from '@/components/GlobalContext';
 import LatestEmergencyCard from '@/components/Home/LatestEmergencyCard';

@@ -300,22 +300,9 @@ export const GlobalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setState(prevState => ({ ...prevState, isLoading: true, error: null }));
 
       if (isActive && details) {
-        // Get device ID
-        const senderDeviceId = await AsyncStorage.getItem('device_id');
-        if (!senderDeviceId) {
-          throw new Error('Device not registered');
-        }
-
-        // Trigger alert in database
-        const result = await triggerEmergencyAlert(senderDeviceId, details, receivedFrom);
-        
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to trigger emergency alert');
-        }
-
-        // Update local state with database response
+        // Only update local state, do NOT call triggerEmergencyAlert here!
         const newAlert: EmergencyAlert = {
-          id: result.data?.id,
+          id: undefined, // or pass in the id from the submit handler if needed
           isActive: true,
           timestamp: Date.now(),
           details: details,

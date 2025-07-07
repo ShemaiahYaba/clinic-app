@@ -1,8 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { ApiResponse } from '@/types/api';
 import { handleDatabaseError } from '@/utils/errorHandler';
+import { CONFIG } from '@/config/constants';
 
-const EDGE_FUNCTION_URL = "https://oxhjrszqngdyvbixxyvo.supabase.co/functions/v1/send-push-alert";
+const EDGE_FUNCTION_URL = CONFIG.EDGE_FUNCTION_URL || "https://oxhjrszqngdyvbixxyvo.supabase.co/functions/v1/send-push-alert";
 
 // Emergency Alert Management (merged DB + notification)
 export const triggerEmergencyAlert = async (
@@ -11,6 +12,8 @@ export const triggerEmergencyAlert = async (
   location?: string,
   extraData?: any
 ): Promise<ApiResponse<any>> => {
+  console.log('triggerEmergencyAlert called', { senderDeviceId, message, location, extraData });
+  console.trace('triggerEmergencyAlert stack trace');
   try {
     // 1. Insert into database
     const { data, error } = await supabase
@@ -30,21 +33,43 @@ export const triggerEmergencyAlert = async (
 
     if (error) throw error;
 
-    // 2. Trigger notification
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sender_device_id: senderDeviceId,
-        message,
-        location,
-        extra_data: extraData
-      })
-    });
+    // 2. Trigger notification with proper authentication
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json"
+      };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText);
+      // Add authorization header if service role key is available
+      if (CONFIG.SUPABASE_SERVICE_ROLE_KEY && CONFIG.SUPABASE_SERVICE_ROLE_KEY !== 'your-service-role-key-here') {
+        headers["Authorization"] = `Bearer ${CONFIG.SUPABASE_SERVICE_ROLE_KEY}`;
+        console.log('Using service role key for notification');
+      } else {
+        console.warn('Service role key not available, notification may fail');
+      }
+
+      const response = await fetch(EDGE_FUNCTION_URL, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          sender_device_id: senderDeviceId,
+          message,
+          location,
+          extra_data: extraData
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn('Notification failed but alert was created:', errorText);
+        
+        // Log more details for debugging
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      } else {
+        console.log('Notification sent successfully');
+      }
+    } catch (notificationError) {
+      console.warn('Notification error (alert still created):', notificationError);
     }
 
     return { success: true, data };

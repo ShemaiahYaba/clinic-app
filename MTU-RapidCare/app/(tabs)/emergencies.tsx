@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRefresh } from '@/components/RefreshContext';
 import { getActiveAlerts } from '@/utils/database';
 import { useGlobal } from '@/components/GlobalContext';
@@ -50,6 +51,7 @@ export default function EmergenciesScreen() {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [filterType, setFilterType] = useState<string>('All');
   const { refreshAlerts, isConnected } = useGlobal();
+  const insets = useSafeAreaInsets();
 
   const loadAlerts = useCallback(async () => {
     try {
@@ -96,6 +98,9 @@ export default function EmergenciesScreen() {
 
       <ScrollView
         style={styles.content}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 20, // Add safe area bottom + extra padding
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

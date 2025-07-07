@@ -6,10 +6,10 @@ import Toast from 'react-native-toast-message';
 import { useGlobal } from '../components/GlobalContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { triggerEmergencyAlert } from '@/utils/database';
 
 type EmergencyType = "Heart Attack" | "Accident" | "Fire" | "Other";
 type FlowStep = 'selectType' | 'selectHostel' | 'confirmDetails';
-
 
 
 const emergencyTypesConfig = [
@@ -93,11 +93,11 @@ export default function EmergencyReportPage() {
   };
 
   const handleSubmitReport = async () => {
+    console.log('handleSubmitReport called');
     if (!selectedEmergency || !selectedHostel) return;
     setIsSubmitting(true);
     
     try {
-      const { triggerEmergencyAlert } = await import('@/utils/database');
       // Get device ID
       const senderDeviceId = await AsyncStorage.getItem('device_id');
       if (!senderDeviceId) {
@@ -111,7 +111,10 @@ export default function EmergencyReportPage() {
       }
       // Create the emergency alert in Supabase and trigger notification
       const message = `${selectedEmergency} at ${selectedHostel}`;
+      console.log('Submitting emergency report:', { message, senderDeviceId });
       const result = await triggerEmergencyAlert(senderDeviceId, message, selectedHostel);
+      
+      console.log('Emergency report result:', result);
       
       if (result.success) {
         setEmergencyAlert(true, message);
@@ -126,6 +129,7 @@ export default function EmergencyReportPage() {
         setIsSubmitting(false);
         router.push('/(tabs)/home');
       } else {
+        console.error('Emergency report failed:', result.error);
         Toast.show({
           type: 'error',
           text1: 'Failed to Report',

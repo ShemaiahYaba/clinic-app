@@ -132,17 +132,18 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.content}>
+        <TouchableOpacity onPress={() => router.push('/emergency-report')} activeOpacity={0.85}>
         <View style={styles.emergencyButtonContainer}>
           <TouchableOpacity
             style={styles.emergencyButton}
-            onPress={() => router.push('/emergency-report')}
-            activeOpacity={0.85}
+            onPress={() => router.push('/emergency-report')} activeOpacity={0.85}
           >
             <Ionicons name="alert" size={72} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.emergencyButtonText}>REPORT EMERGENCY</Text>
         </View>
-      
+        </TouchableOpacity>
+
       </View>
       <Modal
         visible={modalVisible}
@@ -219,64 +220,64 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   header: {
-    padding: 20,
-    paddingTop: 60,
+    padding: 16,
+    paddingTop: 50,
     backgroundColor: '#f8fafc',
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
     elevation: 2,
   },
   content: {
-    padding: 20,
-    gap: 20,
+    padding: 16,
+    gap: 16,
   },
   emergencyButtonContainer: {
     alignItems: 'center',
-    marginVertical: 32,
+    marginVertical: 24,
   },
   emergencyButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     backgroundColor: '#d90429',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 6,
+    borderWidth: 5,
     borderColor: '#fff',
     shadowColor: '#ffd600',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 24,
-    elevation: 16,
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 12,
   },
   emergencyButtonText: {
-    marginTop: 18,
-    fontSize: 20,
+    marginTop: 16,
+    fontSize: 18,
     fontFamily: 'Poppins-Bold',
     color: '#d90429',
     fontWeight: 'bold',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     textAlign: 'center',
     textTransform: 'uppercase',
     textShadowColor: '#fff',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -287,8 +288,8 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 24,
-    width: 320,
+    padding: 20,
+    width: 300,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -297,9 +298,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 20,
+    marginBottom: 16,
     color: '#1e293b',
   },
   settingRow: {
@@ -307,23 +308,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   settingLabel: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#1e293b',
     fontWeight: '500',
   },
   closeButton: {
-    marginTop: 16,
+    marginTop: 12,
     backgroundColor: '#2563eb',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
     borderRadius: 8,
   },
   closeButtonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 15,
   },
 }); 

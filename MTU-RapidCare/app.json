@@ -17,7 +17,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.yabashiaka.mturapidcare"
+      "package": "com.yabashiaka.mturapidcare",
+      "googleServicesFile": "./android/app/google-services.json"
     },
     "web": {
       "bundler": "metro",

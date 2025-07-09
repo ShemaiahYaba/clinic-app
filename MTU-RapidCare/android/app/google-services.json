@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "711737327662",
+    "project_id": "mtu-rapidcare",
+    "storage_bucket": "mtu-rapidcare.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711737327662:android:e8bdb438cbd18865009fbf",
+        "android_client_info": {
+          "package_name": "com.yabashiaka.mturapidcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyYhm7bwwxAjye5czw9ilPQ5VD6YPYz-k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

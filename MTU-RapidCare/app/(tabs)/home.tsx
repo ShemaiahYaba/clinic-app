@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Switch, Animated, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Switch, Animated, RefreshControl, BackHandler, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { AppLogo } from '@/components/Logo';
 import { Greeting } from '@/components/Home/Greeting';
 import appJson from '../../app.json';
@@ -26,6 +26,23 @@ export default function HomeScreen() {
   // Access global context for latest emergency
   const { emergencyAlerts, isLoading, error } = useGlobal();
   const { refreshing, refreshAll, registerFetcher, unregisterFetcher } = useRefresh();
+
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onBackPress = () => {
+      // Only exit app if on the home tab
+      if (segments.join('/') === '(tabs)/home') {
+        BackHandler.exitApp();
+        return true;
+      }
+      return false; // Let navigation handle it elsewhere
+    };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [segments]);
 
   // Remove loadLatestEmergency and its useEffect
 

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRefresh } from '@/components/RefreshContext';
@@ -7,6 +7,9 @@ import { getActiveAlerts } from '@/utils/database';
 import { useGlobal } from '@/components/GlobalContext';
 import { router } from 'expo-router';
 import { format, parseISO } from 'date-fns';
+import { supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 interface Alert {
   id: string;
@@ -26,18 +29,11 @@ type GroupedAlerts = {
   [date: string]: Alert[];
 };
 
-const EMERGENCY_TYPES = [
-  'All',
-  'Heart Attack',
-  'Accident',
-  'Fire',
-  'Other',
-];
+const STATUS_FILTERS = ['All', 'active', 'resolved'];
 
 function groupAlertsByDay(alerts: Alert[], filterType: string): GroupedAlerts {
   const grouped: GroupedAlerts = {};
   alerts.forEach((alert) => {
-    if (filterType !== 'All' && alert.extra_data?.emergencyType !== filterType) return;
     const date = format(parseISO(alert.created_at), 'yyyy-MM-dd');
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(alert);
@@ -48,16 +44,33 @@ function groupAlertsByDay(alerts: Alert[], filterType: string): GroupedAlerts {
 export default function EmergenciesScreen() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const { refreshing, refreshAll, registerFetcher, unregisterFetcher } = useRefresh();
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [filterType, setFilterType] = useState<string>('All');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'All' | 'active' | 'resolved'>('All');
   const { refreshAlerts, isConnected } = useGlobal();
   const insets = useSafeAreaInsets();
+
+  // Load alerts from local storage first
+  useEffect(() => {
+    (async () => {
+      try {
+        const cached = await AsyncStorage.getItem('cached_alerts');
+        if (cached) {
+          setAlerts(JSON.parse(cached));
+        }
+      } catch (e) {
+        // Ignore cache errors
+      }
+    })();
+  }, []);
 
   const loadAlerts = useCallback(async () => {
     try {
       const result = await getActiveAlerts();
       if (result.success && result.data) {
         setAlerts(result.data);
+        // Store in local storage
+        await AsyncStorage.setItem('cached_alerts', JSON.stringify(result.data));
       } else {
         setAlerts([]);
       }
@@ -84,16 +97,80 @@ export default function EmergenciesScreen() {
     return () => clearInterval(interval);
   }, [loadAlerts, isConnected]);
 
-  const groupedAlerts: GroupedAlerts = groupAlertsByDay(alerts, filterType);
+  // Add Supabase realtime subscription for true real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('emergencies')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'alerts' },
+        (payload) => {
+          loadAlerts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadAlerts]);
+
+  // Filter alerts by status and date before grouping
+  const filteredAlerts = alerts.filter(alert => {
+    const statusMatch = statusFilter === 'All' ? true : alert.status === statusFilter;
+    if (!statusMatch) return false;
+    if (selectedDate) {
+      const alertDate = format(parseISO(alert.created_at), 'yyyy-MM-dd');
+      const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+      return alertDate === selectedDateStr;
+    }
+    return true;
+  });
+  const groupedAlerts: GroupedAlerts = groupAlertsByDay(filteredAlerts, 'All');
   const sortedDates = Object.keys(groupedAlerts).sort((a, b) => b.localeCompare(a));
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Emergencies</Text>
-        <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)}>
-          <Ionicons name="filter-outline" size={20} color="#1e293b" />
+        <TouchableOpacity style={styles.filterButton} onPress={() => setShowDatePicker(true)}>
+          <Ionicons name="calendar-outline" size={20} color="#1e293b" />
         </TouchableOpacity>
+      </View>
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate || new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          onChange={(event: DateTimePickerEvent, date?: Date) => {
+            setShowDatePicker(false);
+            if (date) setSelectedDate(date);
+          }}
+        />
+      )}
+
+      {/* Show clear date filter button if a date is selected */}
+      {selectedDate && (
+        <TouchableOpacity style={styles.clearDateButton} onPress={() => setSelectedDate(null)}>
+          <Text style={styles.clearDateButtonText}>Clear Date Filter</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Status Filter Toggle */}
+      <View style={styles.statusFilterRow}>
+        {STATUS_FILTERS.map((status) => (
+          <TouchableOpacity
+            key={status}
+            style={[styles.statusFilterButton, statusFilter === status && styles.statusFilterButtonActive]}
+            onPress={() => setStatusFilter(status as 'All' | 'active' | 'resolved')}
+          >
+            <Text style={[styles.statusFilterText, statusFilter === status && styles.statusFilterTextActive]}>
+              {status === 'All' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <ScrollView
@@ -131,85 +208,82 @@ export default function EmergenciesScreen() {
                   <Text style={styles.dayTitle}>{format(parseISO(date), 'EEEE, MMM d, yyyy')}</Text>
                   <Text style={styles.dayCount}>{groupedAlerts[date].length} {groupedAlerts[date].length === 1 ? 'alert' : 'alerts'}</Text>
                 </View>
-                {groupedAlerts[date].map(alert => (
-                  <TouchableOpacity
-                    key={alert.id}
-                    style={[
-                      styles.alertCard,
-                      alert.status === 'resolved' && styles.resolvedAlertCard
-                    ]}
-                    onPress={() => router.push({ pathname: '/emergency-details', params: { id: alert.id } })}
-                  >
-                    <View style={styles.alertRow}>
-                      <Ionicons 
-                        name="alert-circle" 
-                        size={24} 
-                        color={alert.status === 'resolved' ? '#22c55e' : '#dc2626'} 
-                        style={{ marginRight: 8 }} 
-                      />
-                      <Text style={[
-                        styles.alertType,
-                        alert.status === 'resolved' && styles.resolvedAlertType
-                      ]}>
-                        {alert.extra_data?.emergencyType || 'Unknown'}
-                      </Text>
-                      <View style={[
-                        styles.statusBadge,
-                        alert.status === 'resolved' ? styles.resolvedStatusBadge : styles.activeStatusBadge
-                      ]}>
-                        <Text style={[
-                          styles.statusText,
-                          alert.status === 'resolved' ? styles.resolvedStatusText : styles.activeStatusText
+                {groupedAlerts[date].map(alert => {
+                  // Parse type from message (format: 'Type at Location')
+                  let type = '';
+                  const match = alert.message.match(/^(.*?) at (.*)$/);
+                  if (match) {
+                    type = match[1];
+                  } else {
+                    type = alert.message;
+                  }
+                  let iconName: string;
+                  switch (type) {
+                    case 'Asthma Attack':
+                      iconName = 'medkit';
+                      break;
+                    case 'Fainting':
+                      iconName = 'bed';
+                      break;
+                    case 'Vomiting':
+                      iconName = 'nutrition';
+                      break;
+                    case 'Other':
+                      iconName = 'help-circle';
+                      break;
+                    default:
+                      iconName = 'alert-circle';
+                  }
+                  return (
+                    <TouchableOpacity
+                      key={alert.id}
+                      style={[
+                        styles.alertCard,
+                        alert.status === 'resolved' && styles.resolvedAlertCard
+                      ]}
+                      onPress={() => router.push({ pathname: '/emergency-details', params: { id: alert.id } })}
+                    >
+                      <View style={styles.alertRow}>
+                        <Ionicons 
+                          name={iconName as any}
+                          size={24} 
+                          color={alert.status === 'resolved' ? '#22c55e' : '#dc2626'} 
+                          style={{ marginRight: 8 }} 
+                        />
+                        <View style={[
+                          styles.statusBadge,
+                          alert.status === 'resolved' ? styles.resolvedStatusBadge : styles.activeStatusBadge
                         ]}>
-                          {alert.status}
-                        </Text>
+                          <Text style={[
+                            styles.statusText,
+                            alert.status === 'resolved' ? styles.resolvedStatusText : styles.activeStatusText
+                          ]}>
+                            {alert.status}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                    <Text style={styles.alertMessage}>{alert.message}</Text>
-                    <Text style={styles.alertLocation}>Location: {alert.location || 'N/A'}</Text>
-                    <Text style={styles.alertTime}>{format(parseISO(alert.created_at), 'hh:mm a')}</Text>
-                    {alert.resolved_at && alert.status === 'resolved' && (
-                      <Text style={styles.resolvedTime}>Resolved: {format(parseISO(alert.resolved_at), 'MMM d, hh:mm a')}</Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
+                      <Text style={styles.alertMessage}>{alert.message}</Text>
+                      <Text style={styles.alertLocation}>Location: {alert.location || 'N/A'}</Text>
+                      <Text style={styles.alertTime}>{format(parseISO(alert.created_at), 'hh:mm a')}</Text>
+                      {alert.resolved_at && alert.status === 'resolved' && (
+                        <Text style={styles.resolvedTime}>Resolved: {format(parseISO(alert.resolved_at), 'MMM d, hh:mm a')}</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ))}
           </View>
         )}
       </ScrollView>
 
-      <Modal
-        visible={filterModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setFilterModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter by Emergency Type</Text>
-            {EMERGENCY_TYPES.map(type => (
-              <TouchableOpacity
-                key={type}
-                style={[styles.filterOption, filterType === type && styles.selectedFilterOption]}
-                onPress={() => {
-                  setFilterType(type);
-                  setFilterModalVisible(false);
-                }}
-              >
-                <Text style={[styles.filterOptionText, filterType === type && styles.selectedFilterOptionText]}>{type}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.closeModalButton} onPress={() => setFilterModalVisible(false)}>
-              <Text style={styles.closeModalButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* Removed emergency type filter modal */}
     </View>
   );
 }
 
+// NOTE: You must install '@react-native-community/datetimepicker' for the calendar to work:
+// npm install @react-native-community/datetimepicker
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -316,15 +390,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     gap: 8,
   },
-  alertType: {
-    fontSize: 16,
-    fontFamily: 'Poppins-Bold',
-    color: '#dc2626',
-    marginRight: 8,
-  },
-  resolvedAlertType: {
-    color: '#22c55e',
-  },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -373,72 +438,44 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     marginBottom: 2,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+  statusFilterRow: {
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+    gap: 8,
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    width: 320,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 20,
-    color: '#1e293b',
-  },
-  filterOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginBottom: 8,
+  statusFilterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: '#f1f5f9',
-    width: '100%',
-    alignItems: 'center',
   },
-  selectedFilterOption: {
+  statusFilterButtonActive: {
     backgroundColor: '#2563eb',
   },
-  filterOptionText: {
-    fontSize: 16,
+  statusFilterText: {
     color: '#1e293b',
     fontFamily: 'Poppins-Medium',
+    fontSize: 14,
   },
-  selectedFilterOptionText: {
+  statusFilterTextActive: {
     color: '#fff',
     fontWeight: 'bold',
   },
-  closeModalButton: {
-    marginTop: 16,
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
+  clearDateButton: {
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  closeModalButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  sectionHeader: {
-    fontSize: 18,
-    fontFamily: 'Poppins-Bold',
+  clearDateButtonText: {
     color: '#2563eb',
-    marginBottom: 8,
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
   },
 }); 

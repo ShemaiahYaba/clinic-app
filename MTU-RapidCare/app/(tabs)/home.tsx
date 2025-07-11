@@ -9,7 +9,6 @@ import { useGlobal } from '@/components/GlobalContext';
 import LatestEmergencyCard from '@/components/Home/LatestEmergencyCard';
 import RealtimeStatusIndicator from '@/components/Home/RealtimeStatusIndicator';
 import { useRefresh } from '@/components/RefreshContext';
-import { fetchLatestEmergency } from '@/utils/globalFetchers';
 
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -25,16 +24,10 @@ export default function HomeScreen() {
   const logoOpacityAnim = useRef(new Animated.Value(0)).current;
 
   // Access global context for latest emergency
-  const { emergencyAlert } = useGlobal();
+  const { emergencyAlert, isLoading, error } = useGlobal();
   const { refreshing, refreshAll, registerFetcher, unregisterFetcher } = useRefresh();
 
-  const loadLatestEmergency = useCallback(() => fetchLatestEmergency(setLatestEmergency), []);
-
-  useEffect(() => {
-    loadLatestEmergency();
-    registerFetcher(loadLatestEmergency);
-    return () => unregisterFetcher(loadLatestEmergency);
-  }, []);
+  // Remove loadLatestEmergency and its useEffect
 
   const handleEmergencyDetails = () => {
     router.push('/emergency-details');
@@ -119,13 +112,21 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => setLogoModalVisible(true)}>
             <AppLogo size={40} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.notificationButton} onPress={() => setModalVisible(true)}>
-            <Ionicons name="notifications-outline" size={24} color="#1e293b" />
-          </TouchableOpacity>
         </View>
         <Greeting />
-        {emergencyAlert && emergencyAlert.details && (
-          <LatestEmergencyCard emergencyAlert={emergencyAlert} />
+        {emergencyAlert && (
+          <LatestEmergencyCard 
+            emergencyAlert={{
+              ...emergencyAlert,
+              id: emergencyAlert.id || '',
+              message: emergencyAlert.details,
+              created_at: emergencyAlert.timestamp ? new Date(emergencyAlert.timestamp).toISOString() : '',
+              sender_device_id: '', // Fill with actual device id if available
+              status: emergencyAlert.status === 'resolved' ? 'resolved' : 'active',
+            }}
+            loading={isLoading} 
+            error={error}
+          />
         )}
         <RealtimeStatusIndicator />
       </View>
@@ -144,43 +145,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
       </View>
-      <Modal
-        visible={modalVisible}
-        animationType="none"
-        transparent
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Animated.View
-            style={[
-              styles.modalContent,
-              {
-                transform: [{ scale: scaleAnim }],
-                opacity: opacityAnim,
-              },
-            ]}
-          >
-            <Text style={styles.modalTitle}>Notification Settings</Text>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Enable Notifications</Text>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-              />
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Vibrate on Alert</Text>
-              <Switch
-                value={vibrateEnabled}
-                onValueChange={setVibrateEnabled}
-              />
-            </View>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      </Modal>
+      {/* Remove Notification Settings Modal and Vibrate Switch */}
 
       <Modal
         visible={logoModalVisible}

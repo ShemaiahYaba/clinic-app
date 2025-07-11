@@ -1,44 +1,66 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { EmergencyAlertData } from '@/types/api';
+import { formatTimestamp } from '../../utils/format';
 
-// Props: emergencyAlert object from GlobalContext
-export default function LatestEmergencyCard({ 
-  emergencyAlert 
-}: { 
-  emergencyAlert: { 
-    id?: string;
-    isActive: boolean; 
-    details: string; 
-    timestamp: number | null;
-    status?: string;
-    location?: string;
-  } 
-}) {
-  if (!emergencyAlert.details) return null;
+interface LatestEmergencyCardProps {
+  emergencyAlert: EmergencyAlertData;
+  loading?: boolean;
+  error?: string | null;
+}
 
-  // Format timestamp if available
-  const time = emergencyAlert.timestamp ? new Date(emergencyAlert.timestamp).toLocaleString(undefined, {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit', hour12: true
-  }) : '';
+const StatusIcon = ({ isResolved }: { isResolved: boolean }) => (
+  <Ionicons
+    name={isResolved ? 'checkmark-circle' : 'alert-circle'}
+    size={28}
+    color={isResolved ? '#22c55e' : '#dc2626'}
+    style={{ marginRight: 12 }}
+    accessibilityLabel={isResolved ? 'Resolved emergency' : 'Active emergency'}
+  />
+);
 
-  // Status-based styling
+const LatestEmergencyCard: React.FC<LatestEmergencyCardProps> = memo(({ emergencyAlert, loading, error }) => {
+  if (loading) {
+    return (
+      <View style={[styles.card, styles.activeCard, { justifyContent: 'center' }]}> 
+        <ActivityIndicator size="small" color="#2563eb" />
+      </View>
+    );
+  }
+  if (error) {
+    return (
+      <View style={[styles.card, styles.activeCard]}> 
+        <Text style={styles.details}>Error: {error}</Text>
+      </View>
+    );
+  }
+  if (!emergencyAlert.message) {
+    return (
+      <View style={[styles.card, styles.resolvedCard]}> 
+        <Text style={styles.details}>No emergencies reported.</Text>
+      </View>
+    );
+  }
+  const time = formatTimestamp(emergencyAlert.created_at ? new Date(emergencyAlert.created_at).getTime() : null);
   const isResolved = emergencyAlert.status === 'resolved';
-  const iconColor = isResolved ? '#22c55e' : '#dc2626';
   const cardStyle = isResolved ? styles.resolvedCard : styles.activeCard;
   const titleStyle = isResolved ? styles.resolvedTitle : styles.activeTitle;
-
   const handlePress = () => {
     if (emergencyAlert.id) {
       router.push({ pathname: '/emergency-details', params: { id: emergencyAlert.id } });
     }
   };
-
   return (
-    <TouchableOpacity style={[styles.card, cardStyle]} onPress={handlePress}>
-      <Ionicons name="alert-circle" size={28} color={iconColor} style={{ marginRight: 12 }} />
+    <TouchableOpacity
+      style={[styles.card, cardStyle]}
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`View details for ${isResolved ? 'resolved' : 'active'} emergency`}
+      activeOpacity={0.85}
+    >
+      <StatusIcon isResolved={isResolved} />
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={[styles.title, titleStyle]}>
@@ -58,13 +80,15 @@ export default function LatestEmergencyCard({
             </View>
           )}
         </View>
-        <Text style={styles.details}>{emergencyAlert.details}</Text>
+        <Text style={styles.details}>{emergencyAlert.message}</Text>
         {time ? <Text style={styles.time}>{time}</Text> : null}
       </View>
       <Ionicons name="chevron-forward" size={20} color="#64748b" />
     </TouchableOpacity>
   );
-}
+});
+
+export default LatestEmergencyCard;
 
 const styles = StyleSheet.create({
   card: {

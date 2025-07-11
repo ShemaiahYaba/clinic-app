@@ -27,6 +27,9 @@
     },
     "production": {
       "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EAS_SKIP_AUTO_FINGERPRINT": "1",
         "EXPO_PUBLIC_SUPABASE_URL": "https://oxhjrszqngdyvbixxyvo.supabase.co",

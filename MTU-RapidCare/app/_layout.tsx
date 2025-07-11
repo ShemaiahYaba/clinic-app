@@ -5,15 +5,16 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '@/components/ui/Toast';
-import * as SplashScreen from 'expo-splash-screen';
 import { loadFonts } from '@/lib/fonts';
 import React from 'react';
 import { GlobalProvider } from '@/components/GlobalContext';
 import { RefreshProvider } from '@/components/RefreshContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-// Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
+import { setupNotifications } from '@/utils/notificationSetup';
+import CustomSplashScreen from '@/components/CustomSplashScreen';
+import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
+import { router } from 'expo-router';
 
 // Custom theme configuration
 const lightTheme = {
@@ -45,23 +46,41 @@ const darkTheme = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
+    SplashScreen.preventAutoHideAsync();
     async function prepare() {
       try {
         await loadFonts();
+        await setupNotifications();
         setFontsLoaded(true);
-        await SplashScreen.hideAsync();
       } catch (e) {
         console.warn(e);
       }
     }
-
     prepare();
+
+    // Listen for push notification taps
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      if (data && data.id) {
+        router.push({ pathname: '/emergency-details', params: { id: String(data.id) } });
+      }
+    });
+    return () => subscription.remove();
   }, []);
 
-  if (!fontsLoaded) {
-    return null;
+  // When both fonts are loaded and splash is done, hide native splash
+  const handleCustomSplashComplete = async () => {
+    setShowSplash(false);
+    await SplashScreen.hideAsync();
+  };
+
+  if (!fontsLoaded || showSplash) {
+    return (
+      <CustomSplashScreen onComplete={handleCustomSplashComplete} duration={3000} />
+    );
   }
 
   return (
@@ -76,9 +95,9 @@ export default function RootLayout() {
                 animation: 'fade',
                 animationDuration: 200,
               }}
-              initialRouteName="splash"
+              // Remove splash as initial route
             >
-              <Stack.Screen name="splash" />
+              {/* <Stack.Screen name="splash" /> */}
               <Stack.Screen name="index" />
               <Stack.Screen 
                 name="(tabs)" 

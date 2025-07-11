@@ -21,6 +21,8 @@ export async function fetchDeviceInfo(setDeviceName: (name: string | null) => vo
   } else {
     setDeviceName(data.device_name);
     setDeviceId(data.id);
+    // Store device id locally for offline use
+    await AsyncStorage.setItem('device_id', data.id);
   }
 }
 

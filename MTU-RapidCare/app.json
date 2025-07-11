@@ -18,7 +18,8 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.yabashiaka.mturapidcare",
-      "googleServicesFile": "./android/app/google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "buildType": "apk"
     },
     "web": {
       "bundler": "metro",
@@ -27,16 +28,13 @@
     },
     "plugins": [
       "expo-router",
+      "expo-web-browser",
       [
-        "expo-splash-screen",
+        "expo-notifications",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "sounds": ["./assets/sounds/emergency_alert.wav"]
         }
-      ],
-      "expo-web-browser"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

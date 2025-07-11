@@ -8,32 +8,32 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerEmergencyAlert } from '@/utils/database';
 
-type EmergencyType = "Heart Attack" | "Accident" | "Fire" | "Other";
+type EmergencyType = "Asthma Attack" | "Fainting" | "Vomiting" | "Other";
 type FlowStep = 'selectType' | 'selectHostel' | 'confirmDetails';
 
 
 const emergencyTypesConfig = [
   { 
-    name: "Heart Attack" as EmergencyType, 
-    icon: "heart", 
-    color: "#ef4444",
+    name: "Asthma Attack" as EmergencyType, 
+    icon: "medkit", // Ionicons
+    color: "#38bdf8",
+    bgColor: "#e0f2fe"
+  },
+    { 
+    name: "Fainting" as EmergencyType, 
+    icon: "bed", // Ionicons
+    color: "#a78bfa",
+    bgColor: "#ede9fe"
+  },
+  { 
+    name: "Vomiting" as EmergencyType, 
+    icon: "nutrition", // Ionicons
+    color: "#f87171",
     bgColor: "#fee2e2"
   },
   { 
-    name: "Accident" as EmergencyType, 
-    icon: "car", 
-    color: "#eab308",
-    bgColor: "#fef9c3"
-  },
-  { 
-    name: "Fire" as EmergencyType, 
-    icon: "flame", 
-    color: "#f97316",
-    bgColor: "#ffedd5"
-  },
-  { 
     name: "Other" as EmergencyType, 
-    icon: "shield", 
+    icon: "help-circle", // Ionicons
     color: "#3b82f6",
     bgColor: "#dbeafe"
   },

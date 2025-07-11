@@ -18,6 +18,8 @@ interface EmergencyAlert {
   resolved_at?: string;
 }
 
+export type { EmergencyAlert };
+
 interface GlobalState {
   hostelname: string;
   sickness: string;

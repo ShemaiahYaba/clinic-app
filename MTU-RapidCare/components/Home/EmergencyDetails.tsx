@@ -51,7 +51,23 @@ export default function EmergencyDetails({
   const status = emergencyAlert.status || 'Active';
   const statusColor = status.toLowerCase() === 'resolved' ? '#22c55e' : '#f59e42';
   const statusBg = status.toLowerCase() === 'resolved' ? '#dcfce7' : '#fef3c7';
-  const iconName = type.toLowerCase().includes('fire') ? 'flame' : type.toLowerCase().includes('accident') ? 'car' : type.toLowerCase().includes('heart') ? 'heart' : 'alert-circle';
+  let iconName: string;
+  switch (type) {
+    case 'Asthma Attack':
+      iconName = 'medkit';
+      break;
+    case 'Fainting':
+      iconName = 'bed';
+      break;
+    case 'Vomiting':
+      iconName = 'nutrition';
+      break;
+    case 'Other':
+      iconName = 'help-circle';
+      break;
+    default:
+      iconName = 'alert-circle';
+  }
   const iconColor = '#2563eb';
 
   return (

@@ -59,7 +59,7 @@ export default function EmergencyReportPage() {
   const slideUpAnim = useRef(new Animated.Value(0)).current;
 
   // Access global context for emergency alert
-  const { setEmergencyAlert } = useGlobal();
+  const { addEmergencyAlert } = useGlobal();
 
   const handleTypeSelect = (emergencyType: EmergencyType) => {
     setSelectedEmergency(emergencyType);
@@ -117,7 +117,15 @@ export default function EmergencyReportPage() {
       console.log('Emergency report result:', result);
       
       if (result.success) {
-        setEmergencyAlert(true, message);
+        await addEmergencyAlert({
+          id: result.data.id,
+          message,
+          status: 'active',
+          location: selectedHostel,
+          sender_device_id: senderDeviceId,
+          created_at: new Date().toISOString(),
+          resolved_at: undefined,
+        });
         Toast.show({
           type: 'success',
           text1: 'Alert Triggered!',

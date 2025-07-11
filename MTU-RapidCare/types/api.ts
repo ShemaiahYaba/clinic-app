@@ -10,4 +10,7 @@ export interface EmergencyAlertData {
   status: 'active' | 'resolved';
   created_at: string;
   sender_device_id: string;
+  location?: string;
+  resolved_at?: string;
+  pending?: boolean; // For optimistic UI
 } 

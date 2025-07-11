@@ -18,7 +18,7 @@ interface Alert {
 
 export default function EmergencyDetailsPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { emergencyAlert, clearEmergencyAlert } = useGlobal();
+  const { emergencyAlerts, clearEmergencyAlerts } = useGlobal();
   const [alertData, setAlertData] = useState<Alert | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,20 +58,23 @@ export default function EmergencyDetailsPage() {
 
   // Listen for real-time updates from global state
   useEffect(() => {
-    if (emergencyAlert && emergencyAlert.id === id) {
-      console.log('Emergency details: Real-time update received for alert:', id);
-      console.log('New status:', emergencyAlert.status, 'resolved_at:', emergencyAlert.resolved_at);
-      // Update local state when global state changes
-      setAlertData({
-        id: emergencyAlert.id,
-        created_at: emergencyAlert.timestamp ? new Date(emergencyAlert.timestamp).toISOString() : '',
-        message: emergencyAlert.details,
-        status: emergencyAlert.status || 'active',
-        location: emergencyAlert.location,
-        resolved_at: emergencyAlert.resolved_at
-      });
+    if (emergencyAlerts && emergencyAlerts.length > 0) {
+      const currentAlert = emergencyAlerts.find(a => a.id === id);
+      if (currentAlert) {
+        console.log('Emergency details: Real-time update received for alert:', id);
+        console.log('New status:', currentAlert.status, 'resolved_at:', currentAlert.resolved_at);
+        // Update local state when global state changes
+        setAlertData({
+          id: currentAlert.id,
+          created_at: currentAlert.created_at,
+          message: currentAlert.message,
+          status: currentAlert.status || 'active',
+          location: currentAlert.location,
+          resolved_at: currentAlert.resolved_at
+        });
+      }
     }
-  }, [emergencyAlert, id]);
+  }, [emergencyAlerts, id]);
 
   const handleDismiss = async () => {
     // Don't clear the emergency alert when just viewing details
@@ -92,18 +95,11 @@ export default function EmergencyDetailsPage() {
   };
 
   // Determine which data to use
-  const displayData = alertData || (emergencyAlert.id ? {
-    id: emergencyAlert.id,
-    created_at: emergencyAlert.timestamp ? new Date(emergencyAlert.timestamp).toISOString() : '',
-    message: emergencyAlert.details,
-    status: emergencyAlert.status || 'active',
-    location: emergencyAlert.location,
-    resolved_at: emergencyAlert.resolved_at
-  } : null);
+  const displayData = alertData || emergencyAlerts.find(a => a.id === id);
 
   // Debug logging
   console.log('Emergency details: Current alertData:', alertData?.status, alertData?.resolved_at);
-  console.log('Emergency details: Current emergencyAlert:', emergencyAlert?.status, emergencyAlert?.resolved_at);
+  console.log('Emergency details: Current emergencyAlerts:', emergencyAlerts.map(a => ({ id: a.id, status: a.status, resolved_at: a.resolved_at })));
   console.log('Emergency details: Using displayData:', displayData?.status, displayData?.resolved_at);
 
   if (isLoading) {

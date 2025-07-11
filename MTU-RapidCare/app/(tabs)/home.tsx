@@ -24,7 +24,7 @@ export default function HomeScreen() {
   const logoOpacityAnim = useRef(new Animated.Value(0)).current;
 
   // Access global context for latest emergency
-  const { emergencyAlert, isLoading, error } = useGlobal();
+  const { emergencyAlerts, isLoading, error } = useGlobal();
   const { refreshing, refreshAll, registerFetcher, unregisterFetcher } = useRefresh();
 
   // Remove loadLatestEmergency and its useEffect
@@ -114,19 +114,17 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         <Greeting />
-        {emergencyAlert && (
+        {emergencyAlerts && emergencyAlerts.length > 0 && (
           <LatestEmergencyCard 
-            emergencyAlert={{
-              ...emergencyAlert,
-              id: emergencyAlert.id || '',
-              message: emergencyAlert.details,
-              created_at: emergencyAlert.timestamp ? new Date(emergencyAlert.timestamp).toISOString() : '',
-              sender_device_id: '', // Fill with actual device id if available
-              status: emergencyAlert.status === 'resolved' ? 'resolved' : 'active',
-            }}
+            emergencyAlert={emergencyAlerts.find(a => !a.pending) || emergencyAlerts[0]}
             loading={isLoading} 
             error={error}
           />
+        )}
+        {error && (
+          <View style={{ backgroundColor: '#fee2e2', padding: 10, borderRadius: 8, margin: 10 }}>
+            <Text style={{ color: '#dc2626', fontWeight: 'bold' }}>Error: {error}</Text>
+          </View>
         )}
         <RealtimeStatusIndicator />
       </View>

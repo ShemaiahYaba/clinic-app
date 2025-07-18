@@ -4,8 +4,18 @@ import { getActiveAlerts } from '@/utils/database';
 
 // Fetch device info and update state
 export async function fetchDeviceInfo(setDeviceName: (name: string | null) => void, setDeviceId: (id: string | null) => void) {
-  const id = await AsyncStorage.getItem('device_id');
-  if (!id) {
+  // Try to get device name and id from local cache first
+  const cachedDeviceName = await AsyncStorage.getItem('device_name');
+  const cachedDeviceId = await AsyncStorage.getItem('device_id');
+  if (cachedDeviceName) {
+    setDeviceName(cachedDeviceName);
+  }
+  if (cachedDeviceId) {
+    setDeviceId(cachedDeviceId);
+  }
+
+  // Always try to fetch latest from Supabase if device_id exists
+  if (!cachedDeviceId) {
     setDeviceName(null);
     setDeviceId(null);
     return;
@@ -13,16 +23,17 @@ export async function fetchDeviceInfo(setDeviceName: (name: string | null) => vo
   const { data, error } = await supabase
     .from('devices')
     .select('id, device_name')
-    .eq('id', id)
+    .eq('id', cachedDeviceId)
     .single();
   if (error || !data) {
-    setDeviceName(null);
-    setDeviceId(null);
+    // If fetch fails, keep showing cached values
+    return;
   } else {
     setDeviceName(data.device_name);
     setDeviceId(data.id);
-    // Store device id locally for offline use
+    // Store device id and name locally for offline use
     await AsyncStorage.setItem('device_id', data.id);
+    await AsyncStorage.setItem('device_name', data.device_name);
   }
 }
 

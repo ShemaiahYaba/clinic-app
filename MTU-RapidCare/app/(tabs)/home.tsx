@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Switch, Animated, RefreshControl, BackHandler, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useSegments } from 'expo-router';
 import { AppLogo } from '@/components/Logo';
 import { Greeting } from '@/components/Home/Greeting';
@@ -149,13 +149,20 @@ export default function HomeScreen() {
       <View style={styles.content}>
         <TouchableOpacity onPress={() => router.push('/emergency-report')} activeOpacity={0.85}>
         <View style={styles.emergencyButtonContainer}>
-          <TouchableOpacity
-            style={styles.emergencyButton}
-            onPress={() => router.push('/emergency-report')} activeOpacity={0.85}
-          >
-            <Ionicons name="alert" size={72} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.emergencyButtonText}>REPORT EMERGENCY</Text>
+         <TouchableOpacity
+           style={styles.outerRing}
+           onPress={() => router.push('/emergency-report')}
+           activeOpacity={0.85}
+         >
+           <LinearGradient
+             colors={["#ff4e50", "#d90429"]}
+             start={{ x: 0.1, y: 0.1 }}
+             end={{ x: 0.9, y: 0.9 }}
+             style={styles.innerButton}
+           >
+             <Text style={styles.emergencyButtonText}>REPORT EMERGENCY</Text>
+           </LinearGradient>
+         </TouchableOpacity>
         </View>
         </TouchableOpacity>
 
@@ -230,33 +237,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 24,
   },
-  emergencyButton: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: '#d90429',
+  outerRing: {
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: '#e0e0e0', // metallic/gray outer ring
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 5,
-    borderColor: '#fff',
-    shadowColor: '#ffd600',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 16,
+    borderWidth: 3,
+    borderColor: '#bdbdbd',
+  },
+  innerButton: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#ffb3b3', // subtle red border
   },
   emergencyButtonText: {
-    marginTop: 16,
     fontSize: 18,
     fontFamily: 'Poppins-Bold',
-    color: '#d90429',
+    color: '#fff',
     fontWeight: 'bold',
     letterSpacing: 1.5,
     textAlign: 'center',
     textTransform: 'uppercase',
-    textShadowColor: '#fff',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    textShadowColor: '#1976d2',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   modalOverlay: {
     flex: 1,

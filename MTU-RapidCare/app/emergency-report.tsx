@@ -7,37 +7,11 @@ import { useGlobal } from '../components/GlobalContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerEmergencyAlert } from '@/utils/database';
+import { LinearGradient } from 'expo-linear-gradient';
+import { emergencyTypesConfig, EmergencyType } from '@/constants/EmergencyTypes';
 
-type EmergencyType = "Asthma Attack" | "Fainting" | "Vomiting" | "Other";
 type FlowStep = 'selectType' | 'selectHostel' | 'confirmDetails';
 
-
-const emergencyTypesConfig = [
-  { 
-    name: "Asthma Attack" as EmergencyType, 
-    icon: "medkit", // Ionicons
-    color: "#38bdf8",
-    bgColor: "#e0f2fe"
-  },
-    { 
-    name: "Fainting" as EmergencyType, 
-    icon: "bed", // Ionicons
-    color: "#a78bfa",
-    bgColor: "#ede9fe"
-  },
-  { 
-    name: "Vomiting" as EmergencyType, 
-    icon: "nutrition", // Ionicons
-    color: "#f87171",
-    bgColor: "#fee2e2"
-  },
-  { 
-    name: "Other" as EmergencyType, 
-    icon: "help-circle", // Ionicons
-    color: "#3b82f6",
-    bgColor: "#dbeafe"
-  },
-] as const;
 
 const hostelOptions = [
   "NEW ELIZABETH HALL",
@@ -192,7 +166,7 @@ export default function EmergencyReportPage() {
                 style={[styles.emergencyButton, { backgroundColor: emergency.bgColor }]}
                 onPress={() => handleTypeSelect(emergency.name)}
               >
-                <Ionicons name={emergency.icon} size={40} color={emergency.color} />
+                <Ionicons name={emergency.icon as any} size={40} color={emergency.color} />
                 <Text style={[styles.emergencyText, { color: emergency.color }]}>
                   {emergency.name}
                 </Text>
@@ -260,16 +234,23 @@ export default function EmergencyReportPage() {
             <View style={styles.roundButtonContainer}>
               <Animated.View style={[styles.animatedRoundButton, { transform: [{ translateY: slideUpAnim }] }]}> 
                 <TouchableOpacity
-                  style={[styles.roundTriggerButton, isSubmitting && styles.disabledButton]}
+                  style={styles.outerRing}
                   onPress={handleAnimatedSubmit}
                   disabled={isSubmitting}
                   activeOpacity={0.8}
                 >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <Ionicons name="warning" size={36} color="#ffffff" />
-                  )}
+                  <LinearGradient
+                    colors={["#ff4e50", "#d90429"]}
+                    start={{ x: 0.1, y: 0.1 }}
+                    end={{ x: 0.9, y: 0.9 }}
+                    style={styles.innerButton}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator color="#fff" size={48} />
+                    ) : (
+                      <Text style={styles.confirmButtonText}>CONFIRM</Text>
+                    )}
+                  </LinearGradient>
                 </TouchableOpacity>
               </Animated.View>
             </View>
@@ -602,5 +583,40 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1,
     fontSize: 24,
+  },
+  outerRing: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#e0e0e0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 16,
+    borderWidth: 3,
+    borderColor: '#bdbdbd',
+  },
+  innerButton: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#ffb3b3',
+  },
+  confirmButtonText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    textShadowColor: '#d90429',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+    letterSpacing: 2,
   },
 }); 

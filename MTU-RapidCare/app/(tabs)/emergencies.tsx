@@ -8,7 +8,6 @@ import { useGlobal } from '@/components/GlobalContext';
 import { router } from 'expo-router';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/lib/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 interface Alert {
@@ -50,73 +49,10 @@ export default function EmergenciesScreen() {
   const { refreshAlerts, isConnected } = useGlobal();
   const insets = useSafeAreaInsets();
 
-  // Load alerts from local storage first
-  useEffect(() => {
-    (async () => {
-      try {
-        const cached = await AsyncStorage.getItem('cached_alerts');
-        if (cached) {
-          setAlerts(JSON.parse(cached));
-        }
-      } catch (e) {
-        // Ignore cache errors
-      }
-    })();
-  }, []);
-
-  const loadAlerts = useCallback(async () => {
-    try {
-      const result = await getActiveAlerts();
-      if (result.success && result.data) {
-        setAlerts(result.data);
-        // Store in local storage
-        await AsyncStorage.setItem('cached_alerts', JSON.stringify(result.data));
-      } else {
-        setAlerts([]);
-      }
-    } catch (error) {
-      setAlerts([]);
-    }
-  }, []);
-
-  // Load alerts on mount and when refresh is triggered
-  useEffect(() => {
-    loadAlerts();
-    registerFetcher(loadAlerts);
-    return () => unregisterFetcher(loadAlerts);
-  }, [loadAlerts, registerFetcher, unregisterFetcher]);
-
-  // Listen for real-time updates from GlobalContext
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (isConnected) {
-        loadAlerts();
-      }
-    }, 5000); // Refresh every 5 seconds when connected
-
-    return () => clearInterval(interval);
-  }, [loadAlerts, isConnected]);
-
-  // Add Supabase realtime subscription for true real-time updates
-  useEffect(() => {
-    const channel = supabase
-      .channel('emergencies')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'alerts' },
-        (payload) => {
-          loadAlerts();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [loadAlerts]);
-
+  // Use alerts from global context
+  const { emergencyAlerts } = useGlobal();
   // Filter alerts by status and date before grouping
-  const filteredAlerts = alerts.filter(alert => {
+  const filteredAlerts = emergencyAlerts.filter(alert => {
     const statusMatch = statusFilter === 'All' ? true : alert.status === statusFilter;
     if (!statusMatch) return false;
     if (selectedDate) {
@@ -188,7 +124,7 @@ export default function EmergenciesScreen() {
         }
       >
         
-        {alerts.length === 0 ? (
+        {emergencyAlerts.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="alert-circle-outline" size={48} color="#94a3b8" />
             <Text style={styles.emptyStateTitle}>No Emergencies</Text>

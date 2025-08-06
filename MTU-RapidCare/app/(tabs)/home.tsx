@@ -149,11 +149,11 @@ export default function HomeScreen() {
       <View style={styles.content}>
         <TouchableOpacity onPress={() => router.push('/emergency-report')} activeOpacity={0.85}>
         <View style={styles.emergencyButtonContainer}>
-         <TouchableOpacity
+          <TouchableOpacity
            style={styles.outerRing}
            onPress={() => router.push('/emergency-report')}
            activeOpacity={0.85}
-         >
+          >
            <LinearGradient
              colors={["#ff4e50", "#d90429"]}
              start={{ x: 0.1, y: 0.1 }}
@@ -162,7 +162,7 @@ export default function HomeScreen() {
            >
              <Text style={styles.emergencyButtonText}>REPORT EMERGENCY</Text>
            </LinearGradient>
-         </TouchableOpacity>
+          </TouchableOpacity>
         </View>
         </TouchableOpacity>
 

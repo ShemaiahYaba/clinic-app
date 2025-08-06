@@ -244,12 +244,12 @@ export default function EmergencyReportPage() {
                     start={{ x: 0.1, y: 0.1 }}
                     end={{ x: 0.9, y: 0.9 }}
                     style={styles.innerButton}
-                  >
-                    {isSubmitting ? (
+                >
+                  {isSubmitting ? (
                       <ActivityIndicator color="#fff" size={48} />
-                    ) : (
+                  ) : (
                       <Text style={styles.confirmButtonText}>CONFIRM</Text>
-                    )}
+                  )}
                   </LinearGradient>
                 </TouchableOpacity>
               </Animated.View>
